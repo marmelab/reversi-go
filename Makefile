@@ -30,5 +30,4 @@ test:
 # Lint ##########################
 
 lint:
-	$(GO_BIN) go get github.com/golang/lint/golint
-	$(GO_BIN) ./bin/golint src/
+	$(GO_BIN) gofmt -w src/
