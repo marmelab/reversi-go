@@ -5,13 +5,11 @@ import (
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
-	"strings"
-	"time"
 )
 
 func main() {
 
-	fmt.Println("\n########## GAME STARTED ##########")
+	fmt.Println("\n############# REVERSI #############")
 
 	playerBlack := askForPlayer("\n### Black player ###\n", cell.TypeBlack)
 	playerWhite := askForPlayer("\n### White player ###\n", cell.TypeWhite)
@@ -20,20 +18,25 @@ func main() {
 
 	fmt.Println(game.Render(party))
 
+	fmt.Println("\n########## GAME STARTED ##########")
+
 	for !game.IsFinished(party) {
-
-		game.RenderAskBoard(party)
-
-		currPlayer := game.GetCurrentPlayer(party)
-		fmt.Printf("%s, It's our turn ! Which position do you choose ? \n", strings.ToUpper(currPlayer.Name))
 
 		fmt.Println(game.RenderAskBoard(party))
 
-		party = game.SwitchPlayer(party)
+		var err error
+		party = game.PlayTurn(party)
+		party, err = game.SwitchPlayer(party)
 
-		time.Sleep(10000000000)
+		if err != nil {
+			fmt.Println(err)
+		}
 
 	}
+
+	fmt.Println("\n########## END OF GAME ##########")
+
+	game.Render(party)
 
 }
 

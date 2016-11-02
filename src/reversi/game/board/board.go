@@ -96,7 +96,7 @@ func DrawCells(cells []cell.Cell, board Board) Board {
 }
 
 func CellExist(xPos uint8, yPos uint8, board Board) bool {
-	return uint8(len(board)-1) > yPos && uint8(len(board[yPos])-1) > xPos
+	return uint8(len(board)-1) >= yPos && uint8(len(board[yPos])-1) >= xPos
 }
 
 func GetCellType(xPos uint8, yPos uint8, board Board) uint8 {
@@ -108,34 +108,39 @@ func GetCellType(xPos uint8, yPos uint8, board Board) uint8 {
 
 func GetFlippedCellsFromCellChange(cellChange cell.Cell, board Board) []cell.Cell {
 
-	cellChangeType := GetCellType(cellChange.X, cellChange.Y, board)
+	cellChangeType := cellChange.CellType
 	reverseCellType := cell.GetReverseCellType(cellChangeType)
 
-	if cellChangeType != cell.TypeEmpty {
+	if GetCellType(cellChange.X, cellChange.Y, board) != cell.TypeEmpty {
 		return []cell.Cell{}
 	}
 
 	var localCellType uint8
 	var localVectorPosition vector.Vector
-	var flipped []cell.Cell
+
+	flippedCells := []cell.Cell{}
+	localFlippedCells := []cell.Cell{}
 
 	for _, directionnalAddVector := range vector.GetDirectionnalVectors() {
-		localFlipped := []cell.Cell{}
+		localFlippedCells = localFlippedCells[:0]
 		localVectorPosition = vector.Vector{float64(cellChange.X), float64(cellChange.Y)}
 		for {
 			localVectorPosition = vector.VectorAdd(localVectorPosition, directionnalAddVector)
-			localCellType := GetCellType(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), board)
+			localCellType = GetCellType(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), board)
 			if localCellType != reverseCellType {
 				break
 			}
-			localFlipped = append(localFlipped, cell.New(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), cellChangeType))
+			localCellChange := cell.New(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), cellChangeType)
+			localFlippedCells = append(localFlippedCells, localCellChange)
 		}
-		if localCellType == cellChange.CellType && len(localFlipped) > 0 {
-			flipped = append(flipped, localFlipped...)
+
+		if localCellType == cellChangeType && len(localFlippedCells) > 0 {
+			flippedCells = append(flippedCells, localFlippedCells...)
 		}
+
 	}
 
-	return flipped
+	return flippedCells
 
 }
 
@@ -158,8 +163,13 @@ func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {
 
 }
 
+func CellTypeHasCellChanges(cellType uint8, board Board) bool {
+	return len(GetLegalCellChangesForCellType(cellType, board)) > 0
+}
+
 func GetPlayableCellsFromBoardByCellType(cellType uint8, board Board) []cell.Cell {
 
+	// Todo => convolution matrix
 	// stepSize := 2
 	xSize, ySize := GetSize(board)
 	// reverseCellType = cell.GetReverseCellType(cellType)

@@ -153,3 +153,34 @@ func DrawCellsShouldDrawCellOnBoard(t *testing.T) {
 	}
 
 }
+
+func TestGetLegalCellChangesForCellTypeShouldReturnLegalCellChangeSlice(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+	expectedCellChanges := []cell.Cell{cell.Cell{2, 0, cell.TypeBlack}}
+
+	if !reflect.DeepEqual(GetLegalCellChangesForCellType(cell.TypeBlack, board), expectedCellChanges) {
+		t.Error("GetLegalCellChanges sould return the expected Cell Changes")
+	}
+
+}
+
+func TestGetCellTypeShouldReturnCellType(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+
+	if GetCellType(0, 0, board) != cell.TypeBlack || GetCellType(1, 0, board) != cell.TypeWhite {
+		t.Error("GetCellType should return CellType")
+	}
+
+}
+
+func TestGetCellTypeShouldReturnEmptyCellTypeForOutOfRangeCell(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+
+	if GetCellType(42, 42, board) != cell.TypeEmpty {
+		t.Error("GetCellType should return EmptyCellType for OutOfRange cell")
+	}
+
+}
