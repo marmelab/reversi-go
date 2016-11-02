@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/fatih/color"
 	"reversi/game/cell"
+	"reversi/game/vector"
 	"strings"
 )
 
@@ -47,15 +48,20 @@ func GetDepartureCells(board Board) []cell.Cell {
 
 }
 
-func Render(board Board) string {
+func Render(board Board, cellProposals []cell.Cell) string {
 	var buffer bytes.Buffer
 	xSize, _ := GetSize(board)
 	underlined := color.New(color.Underline).SprintFunc()
 	buffer.WriteString(strings.Repeat("_", int((xSize*2)+1)) + "\n")
-	for _, row := range board {
+	for yPos, row := range board {
 		buffer.WriteString("|")
-		for _, cellType := range row {
-			buffer.WriteString(underlined(cell.GetSymbol(cellType) + "|"))
+		for xPos, cellType := range row {
+			cellFinded, cellFindedIdx := cell.CellsContainsCellPosition(cell.New(uint8(xPos), uint8(yPos), cell.TypeEmpty), cellProposals)
+			if cellFinded {
+				buffer.WriteString(underlined(cellFindedIdx) + "|")
+			} else {
+				buffer.WriteString(underlined(cell.GetSymbol(cellType) + "|"))
+			}
 		}
 		buffer.WriteString("\n")
 	}
@@ -93,15 +99,80 @@ func CellExist(xPos uint8, yPos uint8, board Board) bool {
 	return uint8(len(board)-1) > yPos && uint8(len(board[yPos])-1) > xPos
 }
 
+func GetCellType(xPos uint8, yPos uint8, board Board) uint8 {
+	if !CellExist(xPos, yPos, board) {
+		return cell.TypeEmpty
+	}
+	return board[yPos][xPos]
+}
+
 func GetFlippedCellsFromCellChange(cellChange cell.Cell, board Board) []cell.Cell {
 
-	flipped := []cell.Cell{}
+	cellChangeType := GetCellType(cellChange.X, cellChange.Y, board)
+	reverseCellType := cell.GetReverseCellType(cellChangeType)
 
-	if !CellExist(cellChange.X, cellChange.Y, board) || board[cellChange.Y][cellChange.X] != cell.TypeEmpty {
-		return flipped
+	if cellChangeType != cell.TypeEmpty {
+		return []cell.Cell{}
+	}
+
+	var localCellType uint8
+	var localVectorPosition vector.Vector
+	var flipped []cell.Cell
+
+	for _, directionnalAddVector := range vector.GetDirectionnalVectors() {
+		localFlipped := []cell.Cell{}
+		localVectorPosition = vector.Vector{float64(cellChange.X), float64(cellChange.Y)}
+		for {
+			localVectorPosition = vector.VectorAdd(localVectorPosition, directionnalAddVector)
+			localCellType := GetCellType(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), board)
+			if localCellType != reverseCellType {
+				break
+			}
+			localFlipped = append(localFlipped, cell.New(uint8(localVectorPosition.X), uint8(localVectorPosition.Y), cellChangeType))
+		}
+		if localCellType == cellChange.CellType && len(localFlipped) > 0 {
+			flipped = append(flipped, localFlipped...)
+		}
 	}
 
 	return flipped
+
+}
+
+func IsLegalCellChange(cellChange cell.Cell, board Board) bool {
+	return len(GetFlippedCellsFromCellChange(cellChange, board)) > 0
+}
+
+func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {
+
+	legalCellChanges := []cell.Cell{}
+	playableCells := GetPlayableCellsFromBoardByCellType(cellType, board)
+
+	for _, playableCell := range playableCells {
+		if IsLegalCellChange(playableCell, board) {
+			legalCellChanges = append(legalCellChanges, playableCell)
+		}
+	}
+
+	return legalCellChanges
+
+}
+
+func GetPlayableCellsFromBoardByCellType(cellType uint8, board Board) []cell.Cell {
+
+	// stepSize := 2
+	xSize, ySize := GetSize(board)
+	// reverseCellType = cell.GetReverseCellType(cellType)
+	stepSize := uint8(1)
+	playableCells := []cell.Cell{}
+
+	for yPos := uint8(0); yPos < ySize; yPos += stepSize {
+		for xPos := uint8(0); xPos < xSize; xPos += stepSize {
+			playableCells = append(playableCells, cell.New(xPos, yPos, cellType))
+		}
+	}
+
+	return playableCells
 
 }
 

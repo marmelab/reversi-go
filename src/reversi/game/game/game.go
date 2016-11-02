@@ -1,7 +1,9 @@
 package game
 
 import (
+	"math"
 	"reversi/game/board"
+	"reversi/game/cell"
 	"reversi/game/player"
 )
 
@@ -21,7 +23,7 @@ func New(players []player.Player) Game {
 }
 
 func Render(game Game) string {
-	return board.Render(game.Board)
+	return board.Render(game.Board, []cell.Cell{})
 }
 
 func IsFinished(game Game) bool {
@@ -33,14 +35,22 @@ func GetCurrentPlayer(game Game) player.Player {
 }
 
 func GetScore(game Game) map[player.Player]uint8 {
-
 	dist := board.GetCellDistribution(game.Board)
 	score := make(map[player.Player]uint8, 2)
-
 	for _, player := range game.Players {
 		score[player] = dist[player.CellType]
 	}
-
 	return score
+}
 
+func SwitchPlayer(game Game) Game {
+	newgame := game
+	newgame.CurrPlayerIndex = uint8(math.Abs(float64(game.CurrPlayerIndex) - 1))
+	return newgame
+}
+
+func RenderAskBoard(game Game) string {
+	currentPlayer := GetCurrentPlayer(game)
+	legalCellChanges := board.GetLegalCellChangesForCellType(currentPlayer.CellType, game.Board)
+	return board.Render(game.Board, legalCellChanges)
 }

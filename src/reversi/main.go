@@ -5,6 +5,8 @@ import (
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
+	"strings"
+	"time"
 )
 
 func main() {
@@ -20,8 +22,16 @@ func main() {
 
 	for !game.IsFinished(party) {
 
+		game.RenderAskBoard(party)
+
 		currPlayer := game.GetCurrentPlayer(party)
-		fmt.Printf("%s, It's our turn !", currPlayer.Name)
+		fmt.Printf("%s, It's our turn ! Which position do you choose ? \n", strings.ToUpper(currPlayer.Name))
+
+		fmt.Println(game.RenderAskBoard(party))
+
+		party = game.SwitchPlayer(party)
+
+		time.Sleep(10000000000)
 
 	}
 

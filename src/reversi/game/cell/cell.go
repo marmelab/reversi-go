@@ -24,3 +24,19 @@ func GetSymbol(cellType uint8) string {
 		return " "
 	}
 }
+
+func GetReverseCellType(cellType uint8) uint8 {
+	if cellType == TypeBlack {
+		return TypeWhite
+	}
+	return TypeBlack
+}
+
+func CellsContainsCellPosition(searchCell Cell, cells []Cell) (bool, int) {
+	for idx, c := range cells {
+		if c.X == searchCell.X && c.Y == searchCell.Y {
+			return true, idx
+		}
+	}
+	return false, 0
+}
