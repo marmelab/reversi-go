@@ -29,14 +29,18 @@ func Render(game Game) string {
 }
 
 func IsFinished(game Game) bool {
-	return board.IsFull(game.Board)
+	return board.IsFull(game.Board) || board.NoBodyCanApplyCellChange(game.Board)
 }
 
 func GetCurrentPlayer(game Game) player.Player {
 	return game.Players[game.CurrPlayerIndex]
 }
 
-func GetScore(game Game) map[player.Player]uint8 {
+func GetReversePlayer(game Game) player.Player {
+	return game.Players[GetReversePlayerIndex(game)]
+}
+
+func GetScores(game Game) map[player.Player]uint8 {
 	dist := board.GetCellDistribution(game.Board)
 	score := make(map[player.Player]uint8, 2)
 	for _, player := range game.Players {
@@ -56,8 +60,25 @@ func SwitchPlayer(game Game) Game {
 	return newGame
 }
 
+func GetWinPlayer(game Game) (player.Player, error) {
+	scores := GetScores(game)
+	currentPlayerScore := scores[GetCurrentPlayer(game)]
+	reversePlayerScore := scores[GetReversePlayer(game)]
+	if currentPlayerScore > reversePlayerScore {
+		return GetCurrentPlayer(game), nil
+	}
+	if reversePlayerScore > currentPlayerScore {
+		return GetReversePlayer(game), nil
+	}
+	return player.Player{}, errors.New("There's no winner")
+}
+
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
 	return len(board.GetLegalCellChangesForCellType(player.CellType, currentGame.Board)) > 0
+}
+
+func GetReversePlayerIndex(game Game) uint8 {
+	return uint8(math.Abs(float64(game.CurrPlayerIndex) - 1))
 }
 
 func RenderAskBoard(game Game) string {
@@ -72,32 +93,39 @@ func PlayTurn(currentGame Game) (Game, error) {
 		return SwitchPlayer(currentGame), errors.New("You can't play !")
 	}
 
-	newGame := currentGame
 	cellChange := askForCellChange(newGame)
-
-	cellChangesFromChoice := append(board.GetFlippedCellsFromCellChange(cellChange, newGame.Board), cellChange)
-	newGame.Board = board.DrawCells(cellChangesFromChoice, newGame.Board)
-
-	return SwitchPlayer(newGame), nil
-
+	return SwitchPlayer(PlayCellChange(currentGame, cellChange)), nil
 }
 
-func askForCellChange(game Game) cell.Cell {
+func PlayCellChange(game Game, cellChange cell.Cell) Game {
+	cellChanges := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
+	return Game{
+		board.DrawCells(cellChanges, game.Board),
+		game.Players,
+		game.CurrPlayerIndex,
+	}
+}
+
+func GetAvailableCellChanges(game Game) []cell.Cell {
+	return board.GetLegalCellChangesForCellType(GetCurrentPlayer(game).CellType, game.Board)
+}
+
+func AskForCellChange(game Game) cell.Cell {
 
 	var legalCellChangeChoice int
 	currentPlayer := GetCurrentPlayer(game)
-	legalCellChanges := board.GetLegalCellChangesForCellType(currentPlayer.CellType, game.Board)
+	availableCellChanges := GetAvailableCellChanges(game)
 
 	fmt.Printf("%s, It's our turn !\n", strings.ToUpper(currentPlayer.Name))
 
 	if currentPlayer.HumanPlayer {
-		fmt.Printf("Which position do you choose (0..%d) ? ", len(legalCellChanges)-1)
+		fmt.Printf("Which position do you choose (0..%d) ? ", len(availableCellChanges)-1)
 		fmt.Scanf("%d\n", &legalCellChangeChoice)
 	} else {
 		legalCellChangeChoice = 0 // todo => AI
 		fmt.Printf("AI makes his choice ! %d\n", legalCellChangeChoice)
 	}
 
-	return legalCellChanges[legalCellChangeChoice]
+	return availableCellChanges[legalCellChangeChoice]
 
 }

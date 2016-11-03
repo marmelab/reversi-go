@@ -12,8 +12,7 @@ type Board [][]uint8
 
 func New(xSize uint8, ySize uint8) Board {
 	board := Board{}
-	var y uint8
-	for y = 0; y < ySize; y++ {
+	for y := uint8(0); y < ySize; y++ {
 		board = append(board, make([]uint8, xSize, xSize))
 	}
 	return board
@@ -34,7 +33,6 @@ func InitCells(board Board) (Board, error) {
 func GetDepartureCells(board Board) []cell.Cell {
 
 	xSize, ySize := matrix.GetSize(board)
-
 	xMiddle := uint8(xSize / 2)
 	yMiddle := uint8(ySize / 2)
 
@@ -79,11 +77,20 @@ func IsFull(board Board) bool {
 }
 
 func DrawCells(cells []cell.Cell, board Board) Board {
-	newBoard := board
+	newBoard := Copy(board)
 	for _, cell := range cells {
 		newBoard[cell.Y][cell.X] = cell.CellType
 	}
 	return newBoard
+}
+
+func Copy(srcBoard Board) Board {
+	dstBoard := make(Board, len(srcBoard))
+	for idx, row := range srcBoard {
+		dstBoard[idx] = make([]uint8, len(row))
+		copy(dstBoard[idx], srcBoard[idx])
+	}
+	return dstBoard
 }
 
 func GetCellType(xPos uint8, yPos uint8, board Board) uint8 {
@@ -138,23 +145,6 @@ func GetFlippedCellsForCellChangeAndDirectionVector(cellChange cell.Cell, direct
 
 func IsLegalCellChange(cellChange cell.Cell, board Board) bool {
 	return len(GetFlippedCellsFromCellChange(cellChange, board)) > 0
-}
-
-func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {
-
-	legalCellChanges := []cell.Cell{}
-
-	for y, row := range board {
-		for x, _ := range row {
-			cellChange := cell.Cell{uint8(x), uint8(y), cellType}
-			if IsLegalCellChange(cellChange, board) {
-				legalCellChanges = append(legalCellChanges, cellChange)
-			}
-		}
-	}
-
-	return legalCellChanges
-
 }
 
 func GetCellDistribution(board Board) map[uint8]uint8 {
