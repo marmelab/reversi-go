@@ -119,16 +119,6 @@ func TestGetDepartureCellsShouldReturnDepartureCells(t *testing.T) {
 
 }
 
-func TestGetSizeShouldReturnBoardSizeFromFirstRow(t *testing.T) {
-
-	board := Board{{0}, {0, 1, 3}}
-	x, y := GetSize(board)
-
-	if x != 1 || y != 2 {
-		t.Error("The expected board size is not right")
-	}
-}
-
 func TestCellExistShouldReturnFalseIfCellDoesntExist(t *testing.T) {
 
 	board := Board{{0, 0, 0}, {0, 1, 3}}

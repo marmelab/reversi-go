@@ -1,12 +1,11 @@
 package board
 
 import (
-	"bytes"
 	"errors"
-	"github.com/fatih/color"
 	"reversi/game/cell"
+	"reversi/game/matrix"
 	"reversi/game/vector"
-	"strings"
+	"strconv"
 )
 
 type Board [][]uint8
@@ -20,12 +19,12 @@ func New(xSize uint8, ySize uint8) Board {
 	return board
 }
 
-func IsValidBoardSize(xSize uint8, ySize uint8) bool {
+func IsValidBoardSize(xSize int, ySize int) bool {
 	return xSize%2 == 0 && ySize%2 == 0
 }
 
 func InitCells(board Board) (Board, error) {
-	xSize, ySize := GetSize(board)
+	xSize, ySize := matrix.GetSize(board)
 	if !IsValidBoardSize(xSize, ySize) {
 		return board, errors.New("Invalid board Size, x/y dim must be even to place departure cells")
 	}
@@ -34,7 +33,7 @@ func InitCells(board Board) (Board, error) {
 
 func GetDepartureCells(board Board) []cell.Cell {
 
-	xSize, ySize := GetSize(board)
+	xSize, ySize := matrix.GetSize(board)
 
 	xMiddle := uint8(xSize / 2)
 	yMiddle := uint8(ySize / 2)
@@ -49,24 +48,23 @@ func GetDepartureCells(board Board) []cell.Cell {
 }
 
 func Render(board Board, cellProposals []cell.Cell) string {
-	var buffer bytes.Buffer
-	xSize, _ := GetSize(board)
-	underlined := color.New(color.Underline).SprintFunc()
-	buffer.WriteString(strings.Repeat("_", int((xSize*2)+1)) + "\n")
+
+	renderMatrix := [][]string{}
+
 	for yPos, row := range board {
-		buffer.WriteString("|")
+		renderMatrix = append(renderMatrix, make([]string, len(row)))
 		for xPos, cellType := range row {
 			cellFinded, cellFindedIdx := cell.CellsContainsCellPosition(cell.New(uint8(xPos), uint8(yPos), cell.TypeEmpty), cellProposals)
 			if cellFinded {
-				buffer.WriteString(underlined(cellFindedIdx) + "|")
+				renderMatrix[yPos][xPos] = strconv.Itoa(cellFindedIdx)
 			} else {
-				buffer.WriteString(underlined(cell.GetSymbol(cellType) + "|"))
+				renderMatrix[yPos][xPos] = cell.GetSymbol(cellType)
 			}
 		}
-		buffer.WriteString("\n")
 	}
 
-	return buffer.String()
+	return matrix.Render(renderMatrix)
+
 }
 
 func IsFull(board Board) bool {
@@ -78,13 +76,6 @@ func IsFull(board Board) bool {
 		}
 	}
 	return true
-}
-
-func GetSize(board Board) (uint8, uint8) {
-	if len(board) == 0 {
-		return 0, 0
-	}
-	return uint8(len(board[0])), uint8(len(board))
 }
 
 func DrawCells(cells []cell.Cell, board Board) Board {
@@ -171,14 +162,14 @@ func GetPlayableCellsFromBoardByCellType(cellType uint8, board Board) []cell.Cel
 
 	// Todo => convolution matrix
 	// stepSize := 2
-	xSize, ySize := GetSize(board)
+	xSize, ySize := matrix.GetSize(board)
 	// reverseCellType = cell.GetReverseCellType(cellType)
-	stepSize := uint8(1)
+	stepSize := 1
 	playableCells := []cell.Cell{}
 
-	for yPos := uint8(0); yPos < ySize; yPos += stepSize {
-		for xPos := uint8(0); xPos < xSize; xPos += stepSize {
-			playableCells = append(playableCells, cell.New(xPos, yPos, cellType))
+	for yPos := 0; yPos < ySize; yPos += stepSize {
+		for xPos := 0; xPos < xSize; xPos += stepSize {
+			playableCells = append(playableCells, cell.New(uint8(xPos), uint8(yPos), cellType))
 		}
 	}
 

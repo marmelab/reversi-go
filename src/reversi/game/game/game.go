@@ -64,12 +64,13 @@ func RenderAskBoard(game Game) string {
 
 func PlayTurn(game Game) Game {
 
-	cellChange := askForCellChange(game)
+	newGame := game
+	cellChange := askForCellChange(newGame)
 
-	cellChangesFromChoice := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
-	game.Board = board.DrawCells(cellChangesFromChoice, game.Board)
+	cellChangesFromChoice := append(board.GetFlippedCellsFromCellChange(cellChange, newGame.Board), cellChange)
+	newGame.Board = board.DrawCells(cellChangesFromChoice, newGame.Board)
 
-	return game
+	return newGame
 
 }
 
