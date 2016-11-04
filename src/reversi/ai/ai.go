@@ -78,7 +78,7 @@ func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int,
 	// BestCellChange := cell.Cell{}
 	//
 	// maxScoreJobs := make(chan maxScoreJob, 100)
-	// scores := make(chan scoreForCellChange, 100)
+  // scores := make(chan scoreForCellChange, 100)
 	// maxScoreWorkerCount := 2
 	//
 	// for workerIndex := 0; workerIndex <= maxScoreWorkerCount; workerIndex++ {
@@ -101,7 +101,7 @@ func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int,
 	// 			maxScore := curMaxScore
 	// 			BestCellChange := scoreForCellChange.cellChange
 	// 		}
-	// }
+  // }
 	//
 	// return cell.Cell{}
 

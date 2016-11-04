@@ -33,6 +33,6 @@ func TestGetBestCellChange(t *testing.T) {
 
 	party := game.New([]player.Player{playerBlack, playerWhite})
 
-	fmt.Println(GetBestCellChange(party, playerBlack, 0, 4))
+	fmt.Println(GetBestCellChange(party, playerBlack, 0, 1))
 
 }

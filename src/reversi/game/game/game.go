@@ -79,7 +79,6 @@ func GetWinPlayer(game Game) (player.Player, error) {
 }
 
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
-
 	return len(board.GetLegalCellChangesForCellType(player.CellType, currentGame.Board)) > 0
 }
 
