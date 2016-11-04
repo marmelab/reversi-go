@@ -25,8 +25,7 @@ func main() {
 		fmt.Println(game.RenderAskBoard(party))
 
 		var err error
-		party = game.PlayTurn(party)
-		party, err = game.SwitchPlayer(party)
+		party, err = game.PlayTurn(party)
 
 		if err != nil {
 			fmt.Println(err)
@@ -34,7 +33,7 @@ func main() {
 
 	}
 
-	fmt.Println("\n########## END OF GAME ##########")
+	fmt.Println("\n########## END OF GAME ##########\n")
 
 	game.Render(party)
 

@@ -119,20 +119,6 @@ func TestGetDepartureCellsShouldReturnDepartureCells(t *testing.T) {
 
 }
 
-func TestCellExistShouldReturnFalseIfCellDoesntExist(t *testing.T) {
-
-	board := Board{{0, 0, 0}, {0, 1, 3}}
-
-	if CellExist(2, 2, board) {
-		t.Error("CellExist should return false if cell doesn't exist")
-	}
-
-	if !CellExist(0, 0, board) {
-		t.Error("CellExist should return true if cell exist")
-	}
-
-}
-
 func DrawCellsShouldDrawCellOnBoard(t *testing.T) {
 
 	expectedBoard := Board{{cell.TypeBlack}}

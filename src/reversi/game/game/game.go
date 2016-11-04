@@ -3,7 +3,6 @@ package game
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/player"
@@ -46,14 +45,19 @@ func GetScore(game Game) map[player.Player]uint8 {
 	return score
 }
 
-func SwitchPlayer(game Game) (Game, error) {
-	reversePlayerIndex := uint8(math.Abs(float64(game.CurrPlayerIndex) - 1))
-	reversePlayer := game.Players[reversePlayerIndex]
-	if !board.CellTypeHasCellChanges(reversePlayer.CellType, game.Board) {
-		return game, errors.New("Opponent can't play ! Play again")
+func SwitchPlayer(game Game) Game {
+
+	newGame := game
+	if newGame.CurrPlayerIndex == 0 {
+		newGame.CurrPlayerIndex = 1
+	} else {
+		newGame.CurrPlayerIndex = 0
 	}
-	game.CurrPlayerIndex = reversePlayerIndex
-	return game, nil
+	return newGame
+}
+
+func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
+	return len(board.GetLegalCellChangesForCellType(player.CellType, currentGame.Board)) > 0
 }
 
 func RenderAskBoard(game Game) string {
@@ -62,15 +66,19 @@ func RenderAskBoard(game Game) string {
 	return board.Render(game.Board, legalCellChanges)
 }
 
-func PlayTurn(game Game) Game {
+func PlayTurn(currentGame Game) (Game, error) {
 
-	newGame := game
+	if !CanPlayerChangeCells(GetCurrentPlayer(currentGame), currentGame) {
+		return SwitchPlayer(currentGame), errors.New("You can't play !")
+	}
+
+	newGame := currentGame
 	cellChange := askForCellChange(newGame)
 
 	cellChangesFromChoice := append(board.GetFlippedCellsFromCellChange(cellChange, newGame.Board), cellChange)
 	newGame.Board = board.DrawCells(cellChangesFromChoice, newGame.Board)
 
-	return newGame
+	return SwitchPlayer(newGame), nil
 
 }
 
@@ -86,7 +94,7 @@ func askForCellChange(game Game) cell.Cell {
 		fmt.Printf("Which position do you choose (0..%d) ? ", len(legalCellChanges)-1)
 		fmt.Scanf("%d\n", &legalCellChangeChoice)
 	} else {
-		legalCellChangeChoice = 1 // todo => AI
+		legalCellChangeChoice = 0 // todo => AI
 		fmt.Printf("AI makes his choice ! %d\n", legalCellChangeChoice)
 	}
 

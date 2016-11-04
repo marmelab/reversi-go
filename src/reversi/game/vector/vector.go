@@ -1,8 +1,8 @@
 package vector
 
 type Vector struct {
-	X float64
-	Y float64
+	X int
+	Y int
 }
 
 func VectorAdd(vector Vector, addVector Vector) Vector {
