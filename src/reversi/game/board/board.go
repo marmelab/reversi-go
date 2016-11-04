@@ -147,6 +147,23 @@ func IsLegalCellChange(cellChange cell.Cell, board Board) bool {
 	return len(GetFlippedCellsFromCellChange(cellChange, board)) > 0
 }
 
+func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {
+
+	legalCellChanges := []cell.Cell{}
+
+	for y, row := range board {
+		for x, _ := range row {
+			cellChange := cell.Cell{uint8(x), uint8(y), cellType}
+			if IsLegalCellChange(cellChange, board) {
+				legalCellChanges = append(legalCellChanges, cellChange)
+			}
+		}
+	}
+
+	return legalCellChanges
+
+}
+
 func GetCellDistribution(board Board) map[uint8]uint8 {
 	dist := map[uint8]uint8{cell.TypeEmpty: uint8(0), cell.TypeBlack: uint8(0), cell.TypeWhite: uint8(0)}
 	for _, row := range board {

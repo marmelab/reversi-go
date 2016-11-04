@@ -18,21 +18,21 @@ func main() {
 
 	party := game.New([]player.Player{playerBlack, playerWhite})
 
+	fmt.Println("\n########## INITIAL BOARD ##########")
 	fmt.Println(game.Render(party))
-
 	fmt.Println("\n########## GAME STARTED ##########")
+
+	var cellChange cell.Cell
+	var err error
 
 	for !game.IsFinished(party) {
 
 		fmt.Println(game.RenderAskBoard(party))
 
-		var err error
-		var cellChange cell.Cell
-
 		currentPlayer := game.GetCurrentPlayer(party)
 
 		if currentPlayer.HumanPlayer {
-			fmt.Printf("%s, It's our turn !\n", strings.ToUpper(game.GetCurrentPlayer(party).Name))
+			fmt.Printf("%s, It's our turn !\n", strings.ToUpper(currentPlayer.Name))
 			cellChange = game.AskForCellChange(party)
 		} else {
 			fmt.Printf("%s thinks about best positions..\n", strings.ToUpper(currentPlayer.Name))
