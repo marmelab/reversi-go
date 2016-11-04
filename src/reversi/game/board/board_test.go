@@ -119,30 +119,6 @@ func TestGetDepartureCellsShouldReturnDepartureCells(t *testing.T) {
 
 }
 
-func TestGetSizeShouldReturnBoardSizeFromFirstRow(t *testing.T) {
-
-	board := Board{{0}, {0, 1, 3}}
-	x, y := GetSize(board)
-
-	if x != 1 || y != 2 {
-		t.Error("The expected board size is not right")
-	}
-}
-
-func TestCellExistShouldReturnFalseIfCellDoesntExist(t *testing.T) {
-
-	board := Board{{0, 0, 0}, {0, 1, 3}}
-
-	if CellExist(2, 2, board) {
-		t.Error("CellExist should return false if cell doesn't exist")
-	}
-
-	if !CellExist(0, 0, board) {
-		t.Error("CellExist should return true if cell exist")
-	}
-
-}
-
 func DrawCellsShouldDrawCellOnBoard(t *testing.T) {
 
 	expectedBoard := Board{{cell.TypeBlack}}
@@ -150,6 +126,37 @@ func DrawCellsShouldDrawCellOnBoard(t *testing.T) {
 
 	if !reflect.DeepEqual(board, expectedBoard) {
 		t.Error("DrawCells should draw cells and return a new board")
+	}
+
+}
+
+func TestGetLegalCellChangesForCellTypeShouldReturnLegalCellChangeSlice(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+	expectedCellChanges := []cell.Cell{cell.Cell{2, 0, cell.TypeBlack}}
+
+	if !reflect.DeepEqual(GetLegalCellChangesForCellType(cell.TypeBlack, board), expectedCellChanges) {
+		t.Error("GetLegalCellChanges sould return the expected Cell Changes")
+	}
+
+}
+
+func TestGetCellTypeShouldReturnCellType(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+
+	if GetCellType(0, 0, board) != cell.TypeBlack || GetCellType(1, 0, board) != cell.TypeWhite {
+		t.Error("GetCellType should return CellType")
+	}
+
+}
+
+func TestGetCellTypeShouldReturnEmptyCellTypeForOutOfRangeCell(t *testing.T) {
+
+	board := Board{{cell.TypeBlack, cell.TypeWhite, cell.TypeEmpty}}
+
+	if GetCellType(42, 42, board) != cell.TypeEmpty {
+		t.Error("GetCellType should return EmptyCellType for OutOfRange cell")
 	}
 
 }

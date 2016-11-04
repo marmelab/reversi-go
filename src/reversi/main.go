@@ -9,7 +9,7 @@ import (
 
 func main() {
 
-	fmt.Println("\n########## GAME STARTED ##########")
+	fmt.Println("\n############# REVERSI #############")
 
 	playerBlack := askForPlayer("\n### Black player ###\n", cell.TypeBlack)
 	playerWhite := askForPlayer("\n### White player ###\n", cell.TypeWhite)
@@ -18,12 +18,24 @@ func main() {
 
 	fmt.Println(game.Render(party))
 
+	fmt.Println("\n########## GAME STARTED ##########")
+
 	for !game.IsFinished(party) {
 
-		currPlayer := game.GetCurrentPlayer(party)
-		fmt.Printf("%s, It's our turn !", currPlayer.Name)
+		fmt.Println(game.RenderAskBoard(party))
+
+		var err error
+		party, err = game.PlayTurn(party)
+
+		if err != nil {
+			fmt.Println(err)
+		}
 
 	}
+
+	fmt.Println("\n########## END OF GAME ##########\n")
+
+	game.Render(party)
 
 }
 

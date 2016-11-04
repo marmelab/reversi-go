@@ -1,11 +1,11 @@
 package board
 
 import (
-	"bytes"
 	"errors"
-	"github.com/fatih/color"
 	"reversi/game/cell"
-	"strings"
+	"reversi/game/matrix"
+	"reversi/game/vector"
+	"strconv"
 )
 
 type Board [][]uint8
@@ -19,12 +19,12 @@ func New(xSize uint8, ySize uint8) Board {
 	return board
 }
 
-func IsValidBoardSize(xSize uint8, ySize uint8) bool {
+func IsValidBoardSize(xSize int, ySize int) bool {
 	return xSize%2 == 0 && ySize%2 == 0
 }
 
 func InitCells(board Board) (Board, error) {
-	xSize, ySize := GetSize(board)
+	xSize, ySize := matrix.GetSize(board)
 	if !IsValidBoardSize(xSize, ySize) {
 		return board, errors.New("Invalid board Size, x/y dim must be even to place departure cells")
 	}
@@ -33,7 +33,7 @@ func InitCells(board Board) (Board, error) {
 
 func GetDepartureCells(board Board) []cell.Cell {
 
-	xSize, ySize := GetSize(board)
+	xSize, ySize := matrix.GetSize(board)
 
 	xMiddle := uint8(xSize / 2)
 	yMiddle := uint8(ySize / 2)
@@ -47,20 +47,24 @@ func GetDepartureCells(board Board) []cell.Cell {
 
 }
 
-func Render(board Board) string {
-	var buffer bytes.Buffer
-	xSize, _ := GetSize(board)
-	underlined := color.New(color.Underline).SprintFunc()
-	buffer.WriteString(strings.Repeat("_", int((xSize*2)+1)) + "\n")
-	for _, row := range board {
-		buffer.WriteString("|")
-		for _, cellType := range row {
-			buffer.WriteString(underlined(cell.GetSymbol(cellType) + "|"))
+func Render(board Board, cellProposals []cell.Cell) string {
+
+	renderMatrix := [][]string{}
+
+	for yPos, row := range board {
+		renderMatrix = append(renderMatrix, make([]string, len(row)))
+		for xPos, cellType := range row {
+			_, proposalCellIdx := FindCellIndexAt(uint8(xPos), uint8(yPos), cellProposals)
+			if proposalCellIdx != -1 {
+				renderMatrix[yPos][xPos] = strconv.Itoa(proposalCellIdx)
+			} else {
+				renderMatrix[yPos][xPos] = cell.GetSymbol(cellType)
+			}
 		}
-		buffer.WriteString("\n")
 	}
 
-	return buffer.String()
+	return matrix.Render(renderMatrix)
+
 }
 
 func IsFull(board Board) bool {
@@ -74,13 +78,6 @@ func IsFull(board Board) bool {
 	return true
 }
 
-func GetSize(board Board) (uint8, uint8) {
-	if len(board) == 0 {
-		return 0, 0
-	}
-	return uint8(len(board[0])), uint8(len(board))
-}
-
 func DrawCells(cells []cell.Cell, board Board) Board {
 	newBoard := board
 	for _, cell := range cells {
@@ -89,19 +86,74 @@ func DrawCells(cells []cell.Cell, board Board) Board {
 	return newBoard
 }
 
-func CellExist(xPos uint8, yPos uint8, board Board) bool {
-	return uint8(len(board)-1) > yPos && uint8(len(board[yPos])-1) > xPos
+func GetCellType(xPos uint8, yPos uint8, board Board) uint8 {
+	if !(uint8(len(board)-1) >= yPos && uint8(len(board[yPos])-1) >= xPos) {
+		return cell.TypeEmpty
+	}
+	return board[yPos][xPos]
 }
 
 func GetFlippedCellsFromCellChange(cellChange cell.Cell, board Board) []cell.Cell {
 
-	flipped := []cell.Cell{}
-
-	if !CellExist(cellChange.X, cellChange.Y, board) || board[cellChange.Y][cellChange.X] != cell.TypeEmpty {
-		return flipped
+	if GetCellType(cellChange.X, cellChange.Y, board) != cell.TypeEmpty {
+		return []cell.Cell{}
 	}
 
-	return flipped
+	var flippedCells []cell.Cell
+
+	for _, directionnalVector := range vector.GetDirectionnalVectors() {
+		flippedInDirection := GetFlippedCellsForCellChangeAndDirectionVector(cellChange, directionnalVector, board)
+		flippedCells = append(flippedCells, flippedInDirection...)
+	}
+
+	return flippedCells
+
+}
+
+func GetFlippedCellsForCellChangeAndDirectionVector(cellChange cell.Cell, directionVector vector.Vector, board Board) []cell.Cell {
+
+	flippedCells := []cell.Cell{}
+
+	var localCellType uint8
+	localCellPosition := vector.Vector{int(cellChange.X), int(cellChange.Y)}
+	reverseCellType := cell.GetReverseCellType(cellChange.CellType)
+
+	for {
+		localCellPosition = vector.VectorAdd(localCellPosition, directionVector)
+		localCellType = GetCellType(uint8(localCellPosition.X), uint8(localCellPosition.Y), board)
+		if localCellType != reverseCellType {
+			break
+		}
+		flippedCell := cell.New(uint8(localCellPosition.X), uint8(localCellPosition.Y), cellChange.CellType)
+		flippedCells = append(flippedCells, flippedCell)
+	}
+
+	if localCellType == cellChange.CellType && len(flippedCells) > 0 {
+		return flippedCells
+	}
+
+	return []cell.Cell{}
+
+}
+
+func IsLegalCellChange(cellChange cell.Cell, board Board) bool {
+	return len(GetFlippedCellsFromCellChange(cellChange, board)) > 0
+}
+
+func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {
+
+	legalCellChanges := []cell.Cell{}
+
+	for y, row := range board {
+		for x, _ := range row {
+			cellChange := cell.Cell{uint8(x), uint8(y), cellType}
+			if IsLegalCellChange(cellChange, board) {
+				legalCellChanges = append(legalCellChanges, cellChange)
+			}
+		}
+	}
+
+	return legalCellChanges
 
 }
 
@@ -113,4 +165,13 @@ func GetCellDistribution(board Board) map[uint8]uint8 {
 		}
 	}
 	return dist
+}
+
+func FindCellIndexAt(x uint8, y uint8, cells []cell.Cell) (cell.Cell, int) {
+	for idx, cell := range cells {
+		if cell.X == x && cell.Y == y {
+			return cell, idx
+		}
+	}
+	return cell.Cell{}, -1
 }

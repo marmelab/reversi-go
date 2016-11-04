@@ -24,3 +24,13 @@ func GetSymbol(cellType uint8) string {
 		return " "
 	}
 }
+
+func GetReverseCellType(cellType uint8) uint8 {
+	if cellType == TypeBlack {
+		return TypeWhite
+	}
+	if cellType == TypeEmpty {
+		return TypeEmpty
+	}
+	return TypeBlack
+}
