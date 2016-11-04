@@ -12,12 +12,12 @@ func VectorAdd(vector Vector, addVector Vector) Vector {
 func GetDirectionnalVectors() []Vector {
 	return []Vector{
 		Vector{0, 1},
-		Vector{1, 1},
-		Vector{1, 0},
-		Vector{1, -1},
 		Vector{0, -1},
-		Vector{-1, -1},
+		Vector{1, 0},
 		Vector{-1, 0},
+		Vector{1, 1},
+		Vector{1, -1},
+		Vector{-1, -1},
 		Vector{-1, 1},
 	}
 }

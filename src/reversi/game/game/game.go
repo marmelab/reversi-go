@@ -118,10 +118,13 @@ func GetAvailableCellChanges(game Game) []cell.Cell {
 
 func AskForCellChange(game Game) cell.Cell {
 
-	var legalCellChangeChoice int
+	legalCellChangeChoice := 999
 	availableCellChanges := GetAvailableCellChanges(game)
-	fmt.Printf("Which position do you choose (0..%d) ? ", len(availableCellChanges)-1)
-	fmt.Scanf("%d\n", &legalCellChangeChoice)
+
+	for legalCellChangeChoice > len(availableCellChanges)-1 || legalCellChangeChoice < 0 {
+		fmt.Printf("Which position do you choose (0..%d) ? \n", len(availableCellChanges)-1)
+		fmt.Scanf("%d\n", &legalCellChangeChoice)
+	}
 
 	return availableCellChanges[legalCellChangeChoice]
 
