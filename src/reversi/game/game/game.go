@@ -6,7 +6,6 @@ import (
 	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/player"
-	"strings"
 )
 
 type Game struct {
@@ -98,12 +97,13 @@ func PlayTurn(currentGame Game) (Game, error) {
 }
 
 func PlayCellChange(game Game, cellChange cell.Cell) Game {
+
 	cellChanges := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
-	return Game{
+	return SwitchPlayer(Game{
 		board.DrawCells(cellChanges, game.Board),
 		game.Players,
 		game.CurrPlayerIndex,
-	}
+	})
 }
 
 func GetAvailableCellChanges(game Game) []cell.Cell {
@@ -113,18 +113,9 @@ func GetAvailableCellChanges(game Game) []cell.Cell {
 func AskForCellChange(game Game) cell.Cell {
 
 	var legalCellChangeChoice int
-	currentPlayer := GetCurrentPlayer(game)
 	availableCellChanges := GetAvailableCellChanges(game)
-
-	fmt.Printf("%s, It's our turn !\n", strings.ToUpper(currentPlayer.Name))
-
-	if currentPlayer.HumanPlayer {
-		fmt.Printf("Which position do you choose (0..%d) ? ", len(availableCellChanges)-1)
-		fmt.Scanf("%d\n", &legalCellChangeChoice)
-	} else {
-		legalCellChangeChoice = 0 // todo => AI
-		fmt.Printf("AI makes his choice ! %d\n", legalCellChangeChoice)
-	}
+	fmt.Printf("Which position do you choose (0..%d) ? ", len(availableCellChanges)-1)
+	fmt.Scanf("%d\n", &legalCellChangeChoice)
 
 	return availableCellChanges[legalCellChangeChoice]
 

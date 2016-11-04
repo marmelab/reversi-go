@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"reversi/ai"
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
+	"strings"
 )
 
 func main() {
@@ -25,7 +27,19 @@ func main() {
 		fmt.Println(game.RenderAskBoard(party))
 
 		var err error
-		party, err = game.PlayTurn(party)
+		var cellChange cell.Cell
+
+		currentPlayer := game.GetCurrentPlayer(party)
+
+		if currentPlayer.HumanPlayer {
+			fmt.Printf("%s, It's our turn !\n", strings.ToUpper(game.GetCurrentPlayer(party).Name))
+			cellChange = game.AskForCellChange(party)
+		} else {
+			fmt.Printf("%s thinks about best positions..\n", strings.ToUpper(currentPlayer.Name))
+			cellChange = ai.GetBestCellChange(party, currentPlayer, 0, 5)
+		}
+
+		party, err = game.PlayTurn(party, cellChange)
 
 		if err != nil {
 			fmt.Println(err)
@@ -41,19 +55,22 @@ func main() {
 
 func askForPlayer(header string, cellType uint8) player.Player {
 
-	var isHuman string
+	var isHumanInput string
 	var name string
 
 	fmt.Println(header)
 	fmt.Print("Are you an human ? (y/n): ")
-	fmt.Scanf("%s", &isHuman)
+	fmt.Scanf("%s", &isHumanInput)
+	isHuman := (isHumanInput == "y" || isHumanInput == "")
 
-	if isHuman == "y" || isHuman == "" {
+	if isHuman {
 		fmt.Print("What's your name ?: ")
-		fmt.Scanf("%s", &name)
-		return player.New(name, true, cellType)
+	} else {
+		fmt.Print("What's the computer name ?: ")
 	}
 
-	return player.New("Computer", false, cellType)
+	fmt.Scanf("%s", &name)
+
+	return player.New(name, isHuman, cellType)
 
 }

@@ -1,82 +1,95 @@
 package ai
 
 import (
+	"math"
+	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
 )
 
-func BestCellChange(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int, cellChangeChan chan cell.Cell) int {
+func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) int {
 
 	if game.IsFinished(currentGame) || depth >= depthLimit {
-		return Score(currentGame, aiPlayer, depth)
+		return Score(currentGame.Board, aiPlayer, depth)
 	}
 
-	depth++
+	maxScore := -math.MaxInt32
 
-	var scores []int
-	var cellChanges []cell.Cell
-	var possibleNewGame game.Game
-	var resScore int
-	var resScoreIdx int
+	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
-	for _, availableCellChange := range game.GetAvailableCellChanges(currentGame) {
-		possibleNewGame = game.PlayCellChange(currentGame, availableCellChange)
-		possibleNewGame, _ = game.SwitchPlayer(possibleNewGame)
-		scores = append(scores, BestCellChange(possibleNewGame, aiPlayer, depth, depthLimit, cellChangeChan))
-		cellChanges = append(cellChanges, availableCellChange)
-	}
+		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
+		reversePlayerScore := GetMaxScore(virtualGame, aiPlayer, depth+1, depthLimit)
 
-	if game.GetCurrentPlayer(currentGame) == aiPlayer {
-		resScore, resScoreIdx = MinIntSlice(scores)
-	} else {
-		resScore, resScoreIdx = MaxIntSlice(scores)
-	}
-
-	cellChangeChan <- cellChanges[resScoreIdx]
-
-	return resScore
-
-}
-
-func Score(currentGame game.Game, aiPlayer player.Player, depth int) int {
-
-	gameWinner, err := game.GetWinPlayer(currentGame)
-
-	if aiPlayer == gameWinner {
-		return 1000 - depth
-	} else if err == nil {
-		return -1000 + depth
-	} else {
-		return 0
-	}
-
-}
-
-func MinIntSlice(v []int) (m int, idx int) {
-	if len(v) > 0 {
-		m = v[0]
-		idx = 0
-	}
-	for i := 1; i < len(v); i++ {
-		if v[i] < m {
-			m = v[i]
-			idx = i
+		if reversePlayerScore > maxScore {
+			maxScore = reversePlayerScore
 		}
+
 	}
-	return
+
+	return maxScore
+
 }
 
-func MaxIntSlice(v []int) (m int, idx int) {
-	if len(v) > 0 {
-		m = v[0]
-		idx = 0
+func GetMinScore(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) int {
+
+	if game.IsFinished(currentGame) || depth >= depthLimit {
+		return Score(currentGame.Board, aiPlayer, depth)
 	}
-	for i := 1; i < len(v); i++ {
-		if v[i] > m {
-			m = v[i]
-			idx = i
+
+	minScore := math.MaxInt32
+
+	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
+
+		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
+		reversePlayerScore := GetMaxScore(virtualGame, aiPlayer, depth+1, depthLimit)
+
+		if reversePlayerScore < minScore {
+			minScore = reversePlayerScore
 		}
+
 	}
-	return
+
+	return minScore
+
+}
+
+func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) cell.Cell {
+
+	maxScore := -math.MaxInt32
+	bestCellChange := cell.Cell{}
+
+	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
+
+		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
+		cellChangeScore := GetMaxScore(virtualGame, aiPlayer, depth, depthLimit)
+
+		if cellChangeScore > maxScore {
+			maxScore = cellChangeScore
+			bestCellChange = cellChange
+		}
+
+	}
+
+	return bestCellChange
+
+}
+
+func Score(gameBoard board.Board, aiPlayer player.Player, depth int) int {
+
+	cellDist := board.GetCellDistribution(gameBoard)
+	reverseCellType := cell.GetReverseCellType(aiPlayer.CellType)
+
+	var winScore int
+
+	if cellDist[aiPlayer.CellType] > cellDist[reverseCellType] {
+		winScore = math.MaxInt32 - depth
+	} else if cellDist[aiPlayer.CellType] < cellDist[reverseCellType] {
+		winScore = -math.MaxInt32 + depth
+	} else {
+		winScore = 0
+	}
+
+	return winScore
+
 }
