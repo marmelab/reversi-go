@@ -30,12 +30,12 @@ func TestIsFinishedShouldReturnTrueIfBoardIsFull(t *testing.T) {
 
 }
 
-func TestIsFinishedShouldReturnTrueIfThereIsNoOpportunityToPlay(t *testing.T) {
+func TestIsFinishedShouldReturnFalseIfBoardIsNotFull(t *testing.T) {
 
-	blockedGame := Game{board.Board{{cell.TypeBlack, cell.TypeBlack, cell.TypeEmpty}}, make([]player.Player, 2, 2), 0}
+	notFullBoardGame := Game{board.Board{{cell.TypeEmpty}}, make([]player.Player, 2, 2), 0}
 
-	if !IsFinished(blockedGame) {
-		t.Error("IsFinished should return true if there is no opportunity to play")
+	if IsFinished(notFullBoardGame) {
+		t.Error("IsFinished should return false if board is not full")
 	}
 
 }

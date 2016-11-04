@@ -32,10 +32,10 @@ func main() {
 		currentPlayer := game.GetCurrentPlayer(party)
 
 		if currentPlayer.HumanPlayer {
-			fmt.Printf("%s, It's our turn !\n", strings.ToUpper(currentPlayer.Name))
+			fmt.Printf("%s (%s), It's our turn !\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
 			cellChange = game.AskForCellChange(party)
 		} else {
-			fmt.Printf("%s thinks about best positions..\n", strings.ToUpper(currentPlayer.Name))
+			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
 			cellChange = ai.GetBestCellChange(party, currentPlayer, 0, 5)
 		}
 

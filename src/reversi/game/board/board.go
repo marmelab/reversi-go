@@ -106,7 +106,7 @@ func GetFlippedCellsFromCellChange(cellChange cell.Cell, board Board) []cell.Cel
 		return []cell.Cell{}
 	}
 
-	var flippedCells []cell.Cell
+	flippedCells := []cell.Cell{}
 
 	for _, directionnalVector := range vector.GetDirectionnalVectors() {
 		flippedInDirection := GetFlippedCellsForCellChangeAndDirectionVector(cellChange, directionnalVector, board)
@@ -144,7 +144,20 @@ func GetFlippedCellsForCellChangeAndDirectionVector(cellChange cell.Cell, direct
 }
 
 func IsLegalCellChange(cellChange cell.Cell, board Board) bool {
-	return len(GetFlippedCellsFromCellChange(cellChange, board)) > 0
+
+	if GetCellType(cellChange.X, cellChange.Y, board) != cell.TypeEmpty {
+		return false
+	}
+
+	for _, directionnalVector := range vector.GetDirectionnalVectors() {
+		flippedInDirection := GetFlippedCellsForCellChangeAndDirectionVector(cellChange, directionnalVector, board)
+		if len(flippedInDirection) > 0 {
+			return true
+		}
+	}
+
+	return false
+
 }
 
 func GetLegalCellChangesForCellType(cellType uint8, board Board) []cell.Cell {

@@ -28,7 +28,7 @@ func Render(game Game) string {
 }
 
 func IsFinished(game Game) bool {
-	return board.IsFull(game.Board) || NoBodyCanApplyCellChange(game)
+	return board.IsFull(game.Board)
 }
 
 func NoBodyCanApplyCellChange(game Game) bool {
@@ -79,6 +79,7 @@ func GetWinPlayer(game Game) (player.Player, error) {
 }
 
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
+
 	return len(board.GetLegalCellChangesForCellType(player.CellType, currentGame.Board)) > 0
 }
 
