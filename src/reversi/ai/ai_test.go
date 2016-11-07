@@ -2,6 +2,7 @@ package ai
 
 import (
 	//"fmt"
+	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
@@ -17,6 +18,20 @@ func BenchmarkGetBestCellChange(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		GetBestCellChange(party, playerBlack, 0, 1)
+	}
+
+}
+
+func TestGetZoningScore(t *testing.T) {
+
+	board := board.Board{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
+
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 1500 {
+		t.Error("GetZoningScore should return 1500 for corner cell position")
+	}
+
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 1, 1}}, board) != 1000 {
+		t.Error("GetZoningScore should return 1500 for border cell position")
 	}
 
 }
