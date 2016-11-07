@@ -50,8 +50,8 @@ func main() {
 	fmt.Println("\n########## END OF GAME ##########\n")
 	fmt.Println(game.Render(party))
 
-	if winner, err := game.GetWinPlayer(party); err == nil {
-		fmt.Printf("\n########## %s WINS ! ##########\n\n", strings.ToUpper(winner.Name))
+	if winner, err := game.GetWinner(party); err == nil {
+		fmt.Printf("\n########## %s (%s) WINS ! ##########\n\n", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
 	} else {
 		fmt.Println(err)
 	}

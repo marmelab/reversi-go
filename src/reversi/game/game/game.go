@@ -31,10 +31,6 @@ func IsFinished(game Game) bool {
 	return board.IsFull(game.Board)
 }
 
-func NoBodyCanApplyCellChange(game Game) bool {
-	return !CanPlayerChangeCells(GetCurrentPlayer(game), game) && !CanPlayerChangeCells(GetReversePlayer(game), game)
-}
-
 func GetCurrentPlayer(game Game) player.Player {
 	return game.Players[game.CurrPlayerIndex]
 }
@@ -56,19 +52,13 @@ func SwitchPlayer(game Game) Game {
 	return newGame
 }
 
-func GetScores(game Game) map[player.Player]uint8 {
+func GetScores(game Game) (currentPlayerScore, reversePlayerScore uint8) {
 	dist := board.GetCellDistribution(game.Board)
-	score := make(map[player.Player]uint8, 2)
-	for _, player := range game.Players {
-		score[player] = dist[player.CellType]
-	}
-	return score
+	return dist[GetCurrentPlayer(game).CellType], dist[GetReversePlayer(game).CellType]
 }
 
-func GetWinPlayer(game Game) (player.Player, error) {
-	scores := GetScores(game)
-	currentPlayerScore := scores[GetCurrentPlayer(game)]
-	reversePlayerScore := scores[GetReversePlayer(game)]
+func GetWinner(game Game) (player.Player, error) {
+	currentPlayerScore, reversePlayerScore := GetScores(game)
 	if currentPlayerScore > reversePlayerScore {
 		return GetCurrentPlayer(game), nil
 	}
@@ -93,12 +83,14 @@ func PlayTurn(currentGame Game, cellChange cell.Cell) (Game, error) {
 	newGame := PlayCellChange(currentGame, cellChange)
 
 	if !CanPlayerChangeCells(GetReversePlayer(newGame), newGame) {
-		return newGame, errors.New("Opponent can't play ! Play Again !")
-	} else if !CanPlayerChangeCells(GetCurrentPlayer(newGame), newGame) {
-		return newGame, errors.New("There's no cell to play.")
-	} else {
-		return SwitchPlayer(newGame), nil
+		return newGame, errors.New("Opponent can't play! Play Again!")
 	}
+
+	if !CanPlayerChangeCells(GetCurrentPlayer(newGame), newGame) {
+		return newGame, errors.New("There's no cell to play.")
+	}
+
+	return SwitchPlayer(newGame), nil
 
 }
 

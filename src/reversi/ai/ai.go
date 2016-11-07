@@ -8,26 +8,28 @@ import (
 	"reversi/game/player"
 )
 
+const ScoringLevelLimit int = math.MaxInt8
+
 func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) int {
 
 	if game.IsFinished(currentGame) || depth >= depthLimit {
 		return Score(currentGame.Board, aiPlayer, depth)
 	}
 
-	reversePlayerMaxScore := -math.MaxInt32
+	reversePlayerMaxScore := -ScoringLevelLimit
 
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
 		reversePlayerScore := GetMinScore(virtualGame, aiPlayer, depth+1, depthLimit)
 
-		if reversePlayerScore > maxScore {
-			maxScore = reversePlayerScore
+		if reversePlayerScore > reversePlayerMaxScore {
+			reversePlayerMaxScore = reversePlayerScore
 		}
 
 	}
 
-	return maxScore
+	return reversePlayerMaxScore
 
 }
 
@@ -37,26 +39,26 @@ func GetMinScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 		return Score(currentGame.Board, aiPlayer, depth)
 	}
 
-	minScore := math.MaxInt32
+	reversePlayerMinScore := ScoringLevelLimit
 
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
 		reversePlayerScore := GetMaxScore(virtualGame, aiPlayer, depth+1, depthLimit)
 
-		if reversePlayerScore < minScore {
-			minScore = reversePlayerScore
+		if reversePlayerScore < reversePlayerMinScore {
+			reversePlayerMinScore = reversePlayerScore
 		}
 
 	}
 
-	return minScore
+	return reversePlayerMinScore
 
 }
 
 func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) cell.Cell {
 
-	maxScore := -math.MaxInt32
+	maxScore := -ScoringLevelLimit
 	bestCellChange := cell.Cell{}
 
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
@@ -83,9 +85,9 @@ func Score(gameBoard board.Board, aiPlayer player.Player, depth int) int {
 	var winScore int
 
 	if cellDist[aiPlayer.CellType] > cellDist[reverseCellType] {
-		winScore = math.MaxInt32 - depth
+		winScore = ScoringLevelLimit - depth
 	} else if cellDist[aiPlayer.CellType] < cellDist[reverseCellType] {
-		winScore = -math.MaxInt32 + depth
+		winScore = -ScoringLevelLimit + depth
 	} else {
 		winScore = 0
 	}

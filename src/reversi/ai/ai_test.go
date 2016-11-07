@@ -1,9 +1,7 @@
 package ai
 
 import (
-	"fmt"
-	// "time"
-	//"reversi/game/board"
+	//"fmt"
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
@@ -20,19 +18,5 @@ func BenchmarkGetBestCellChange(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		GetBestCellChange(party, playerBlack, 0, 1)
 	}
-
-	//fmt.Println(GetBestCellChange(party, playerBlack, 0, 1))
-	//fmt.Println(GetBestCellChange(party, playerBlack, 0, 1))
-
-}
-
-func TestGetBestCellChange(t *testing.T) {
-
-	playerBlack := player.New("John", true, cell.TypeBlack)
-	playerWhite := player.New("Doe", true, cell.TypeWhite)
-
-	party := game.New([]player.Player{playerBlack, playerWhite})
-
-	fmt.Println(GetBestCellChange(party, playerBlack, 0, 1))
 
 }
