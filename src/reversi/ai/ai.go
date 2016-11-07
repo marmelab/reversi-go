@@ -14,7 +14,7 @@ func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 		return Score(currentGame.Board, aiPlayer, depth)
 	}
 
-	maxScore := -math.MaxInt32
+	reversePlayerMaxScore := -math.MaxInt32
 
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
