@@ -5,6 +5,7 @@ import (
 	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/game"
+	"reversi/game/matrix"
 	"reversi/game/player"
 )
 
@@ -79,22 +80,58 @@ func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int,
 
 func Score(gameBoard board.Board, aiPlayer player.Player, depth int) int {
 
-	cellDist := board.GetCellDistribution(gameBoard)
-	reverseCellType := cell.GetReverseCellType(aiPlayer.CellType)
-
-	var winScore int
-
-	if cellDist[aiPlayer.CellType] > cellDist[reverseCellType] {
-		winScore = ScoringLevelLimit - depth
-	} else if cellDist[aiPlayer.CellType] < cellDist[reverseCellType] {
-		winScore = -ScoringLevelLimit + depth
-	} else {
-		winScore = 0
-	}
-
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
 
-	return winScore
+	availableCellChanges := board.GetLegalCellChangesForCellType(aiPlayer.CellType, gameBoard)
+
+	supremacyScore := GetSupremacyScore(gameBoard, aiPlayer.CellType, depth)
+	zoningScore := GetZoningScore(availableCellChanges, gameBoard)
+
+	return supremacyScore + zoningScore
+
+}
+
+func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
+
+	zoningScore := 0
+	xSize, ySize := matrix.GetSize(gameBoard)
+
+	// Scoring Strategy
+	// +1000 for board limits
+	// +1500 for board corners
+
+	for _, cellChange := range availableCellChanges {
+		xPos := int(cellChange.X)
+		yPos := int(cellChange.Y)
+		if xPos == 0 || xPos == xSize-1 || yPos == 0 || yPos == ySize-1 {
+			zoningScore += 1000
+			if (yPos == 0 && xPos == 0) || (yPos == ySize-1 && xPos == xSize-1) || (yPos == ySize-1 && xPos == 0) || (yPos == 0 && xPos == xSize-1) {
+				zoningScore += 500
+			}
+		}
+	}
+
+	return zoningScore
+
+}
+
+func GetSupremacyScore(gameBoard board.Board, cellType uint8, depth int) int {
+
+	cellDist := board.GetCellDistribution(gameBoard)
+	reverseCellType := cell.GetReverseCellType(cellType)
+
+	// Score based on the number of cell of the player's cellType
+	// The depth parameter permit to highlight near distribution configurations
+
+	if cellDist[cellType] > cellDist[reverseCellType] {
+		return ScoringLevelLimit - depth
+	}
+
+	if cellDist[cellType] < cellDist[reverseCellType] {
+		return -ScoringLevelLimit + depth
+	}
+
+	return 0
 
 }
