@@ -36,7 +36,7 @@ func main() {
 			cellChange = game.AskForCellChange(party)
 		} else {
 			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
-			cellChange = ai.GetBestCellChange(party, currentPlayer, 0, 4)
+			cellChange, _ = ai.GetBestCellChange(party, 0, 4)
 		}
 
 		party, err = game.PlayTurn(party, cellChange)

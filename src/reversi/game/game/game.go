@@ -94,6 +94,10 @@ func PlayTurn(currentGame Game, cellChange cell.Cell) (Game, error) {
 
 }
 
+func NoBodyCanApplyCellChange(currentGame Game) bool {
+	return !CanPlayerChangeCells(GetReversePlayer(currentGame), currentGame) && !CanPlayerChangeCells(GetCurrentPlayer(currentGame), currentGame)
+}
+
 func PlayCellChange(game Game, cellChange cell.Cell) Game {
 	cellChanges := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
 	return Game{

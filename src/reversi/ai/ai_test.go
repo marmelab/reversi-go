@@ -17,7 +17,7 @@ func BenchmarkGetBestCellChange(b *testing.B) {
 	party := game.New([]player.Player{playerBlack, playerWhite})
 
 	for n := 0; n < b.N; n++ {
-		GetBestCellChange(party, playerBlack, 0, 1)
+		GetBestCellChange(party, 0, 1)
 	}
 
 }

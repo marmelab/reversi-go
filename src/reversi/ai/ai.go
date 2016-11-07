@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"errors"
 	"math"
 	"reversi/game/board"
 	"reversi/game/cell"
@@ -11,10 +12,10 @@ import (
 
 const ScoringLevelLimit int = math.MaxInt8
 
-func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) int {
+func GetMaxScore(currentGame game.Game, depth int, depthLimit int) int {
 
 	if game.IsFinished(currentGame) || depth >= depthLimit {
-		return Score(currentGame.Board, aiPlayer, depth)
+		return Score(currentGame.Board, game.GetCurrentPlayer(currentGame), depth)
 	}
 
 	reversePlayerMaxScore := -ScoringLevelLimit
@@ -22,7 +23,7 @@ func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
-		reversePlayerScore := GetMinScore(virtualGame, aiPlayer, depth+1, depthLimit)
+		reversePlayerScore := GetMinScore(virtualGame, depth+1, depthLimit)
 
 		if reversePlayerScore > reversePlayerMaxScore {
 			reversePlayerMaxScore = reversePlayerScore
@@ -34,10 +35,10 @@ func GetMaxScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 
 }
 
-func GetMinScore(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) int {
+func GetMinScore(currentGame game.Game, depth int, depthLimit int) int {
 
 	if game.IsFinished(currentGame) || depth >= depthLimit {
-		return Score(currentGame.Board, aiPlayer, depth)
+		return Score(currentGame.Board, game.GetCurrentPlayer(currentGame), depth)
 	}
 
 	reversePlayerMinScore := ScoringLevelLimit
@@ -45,7 +46,7 @@ func GetMinScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
 
 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
-		reversePlayerScore := GetMaxScore(virtualGame, aiPlayer, depth+1, depthLimit)
+		reversePlayerScore := GetMaxScore(virtualGame, depth+1, depthLimit)
 
 		if reversePlayerScore < reversePlayerMinScore {
 			reversePlayerMinScore = reversePlayerScore
@@ -57,15 +58,29 @@ func GetMinScore(currentGame game.Game, aiPlayer player.Player, depth int, depth
 
 }
 
-func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int, depthLimit int) cell.Cell {
+func GetBestCellChange(currentGame game.Game, depth int, depthLimit int) (cell.Cell, error) {
 
 	maxScore := -ScoringLevelLimit
 	bestCellChange := cell.Cell{}
 
-	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
+	availableCellChanges := game.GetAvailableCellChanges(currentGame)
 
-		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
-		cellChangeScore := GetMaxScore(virtualGame, aiPlayer, depth, depthLimit)
+	if len(availableCellChanges) == 0 {
+		return bestCellChange, errors.New("AI can't play!")
+	}
+
+	if len(availableCellChanges) == 1 {
+		return availableCellChanges[0], nil
+	}
+
+	for _, cellChange := range availableCellChanges {
+
+		virtualGame, playTurnError := game.PlayTurn(currentGame, cellChange)
+		cellChangeScore := GetMaxScore(virtualGame, depth, depthLimit)
+
+		if playTurnError != nil {
+			return bestCellChange, playTurnError
+		}
 
 		if cellChangeScore > maxScore {
 			maxScore = cellChangeScore
@@ -74,18 +89,18 @@ func GetBestCellChange(currentGame game.Game, aiPlayer player.Player, depth int,
 
 	}
 
-	return bestCellChange
+	return bestCellChange, nil
 
 }
 
-func Score(gameBoard board.Board, aiPlayer player.Player, depth int) int {
+func Score(gameBoard board.Board, gamePlayer player.Player, depth int) int {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
 
-	availableCellChanges := board.GetLegalCellChangesForCellType(aiPlayer.CellType, gameBoard)
+	availableCellChanges := board.GetLegalCellChangesForCellType(gamePlayer.CellType, gameBoard)
 
-	supremacyScore := GetSupremacyScore(gameBoard, aiPlayer.CellType, depth)
+	supremacyScore := GetSupremacyScore(gameBoard, gamePlayer.CellType, depth)
 	zoningScore := GetZoningScore(availableCellChanges, gameBoard)
 
 	return supremacyScore + zoningScore
