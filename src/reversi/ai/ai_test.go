@@ -1,7 +1,7 @@
 package ai
 
 import (
-	"fmt"
+	//"fmt"
 	"reflect"
 	"reversi/game/board"
 	"reversi/game/cell"
@@ -52,17 +52,19 @@ func TestGetSupremacyScoreShouldReturnAValidSupremacyScore(t *testing.T) {
 func TestBuildZoneScoringBoardShouldReturnAValidScoreMatrix(t *testing.T) {
 
 	expectedZoneScoringBoard := [][]int{
-		{200, 50, 50, 50, 50, 50, 50, 200},
-		{50, 0, 0, 0, 0, 0, 0, 50},
+		{200, -50, 50, 50, 50, 50, -50, 200},
+		{-50, -50, 0, 0, 0, 0, -50, -50},
 		{50, 0, 50, 50, 50, 50, 0, 50},
 		{50, 0, 50, 0, 0, 50, 0, 50},
 		{50, 0, 50, 0, 0, 50, 0, 50},
 		{50, 0, 50, 50, 50, 50, 0, 50},
-		{50, 0, 0, 0, 0, 0, 0, 50},
-		{200, 50, 50, 50, 50, 50, 50, 200},
+		{-50, -50, 0, 0, 0, 0, -50, -50},
+		{200, -50, 50, 50, 50, 50, -50, 200},
 	}
 
 	zoneScoringBoard := BuildZoneScoringBoard(8, 8)
+
+	//fmt.Println(zoneScoringBoard)
 
 	if !reflect.DeepEqual(zoneScoringBoard, expectedZoneScoringBoard) {
 		t.Error("BuildZoneScoringBoard should return a valid score matrix")
