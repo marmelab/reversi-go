@@ -1,6 +1,7 @@
 package ai
 
 import (
+	"fmt"
 	"reflect"
 	"reversi/game/board"
 	"reversi/game/cell"
@@ -22,8 +23,8 @@ func TestGetZoningScore(t *testing.T) {
 
 	board, _ := board.InitCells(board.New(8, 8))
 
-	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 100 {
-		t.Error("GetZoningScore should return 100 for corner cell position")
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 200 {
+		t.Error("GetZoningScore should return 200 for corner cell position")
 	}
 
 	if GetZoningScore([]cell.Cell{cell.Cell{0, 2, 1}}, board) != 50 {
@@ -51,14 +52,14 @@ func TestGetSupremacyScoreShouldReturnAValidSupremacyScore(t *testing.T) {
 func TestBuildZoneScoringBoardShouldReturnAValidScoreMatrix(t *testing.T) {
 
 	expectedZoneScoringBoard := [][]int{
-		{100, 50, 50, 50, 50, 50, 50, 100},
+		{200, 50, 50, 50, 50, 50, 50, 200},
 		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 50, 50, 50, 50, 0, 50},
+		{50, 0, 50, 0, 0, 50, 0, 50},
+		{50, 0, 50, 0, 0, 50, 0, 50},
+		{50, 0, 50, 50, 50, 50, 0, 50},
 		{50, 0, 0, 0, 0, 0, 0, 50},
-		{50, 0, 0, 0, 0, 0, 0, 50},
-		{50, 0, 0, 0, 0, 0, 0, 50},
-		{50, 0, 0, 0, 0, 0, 0, 50},
-		{50, 0, 0, 0, 0, 0, 0, 50},
-		{100, 50, 50, 50, 50, 50, 50, 100},
+		{200, 50, 50, 50, 50, 50, 50, 200},
 	}
 
 	zoneScoringBoard := BuildZoneScoringBoard(8, 8)

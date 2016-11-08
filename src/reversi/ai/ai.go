@@ -136,16 +136,19 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 
 			zonScore = 0
 
-			// Borders
-
+			// Borders (except around corners)
 			if zonX == 0 || zonX == xSize-1 || zonY == 0 || zonY == ySize-1 {
 				zonScore += 50
 			}
 
-			// Corner
-
-			if (zonX == 0 && zonY == 0) || (zonX == xSize-1 && zonY == ySize-1) || (zonX == 0 && zonY == ySize-1) || (zonX == xSize-1 && zonY == 0) {
+			// Center zoneScoringBoard
+			if (zonX > 1 && zonX < xSize-2 && zonY == 2) || (zonX > 1 && zonX < xSize-2 && zonY == ySize-3) || (zonY > 1 && zonY < ySize-2 && zonX == xSize-3) || (zonY > 1 && zonY < ySize-2 && zonX == 2) {
 				zonScore += 50
+			}
+
+			// Corner
+			if (zonX == 0 && zonY == 0) || (zonX == xSize-1 && zonY == ySize-1) || (zonX == 0 && zonY == ySize-1) || (zonX == xSize-1 && zonY == 0) {
+				zonScore += 150
 			}
 
 			zoningScoreBoard[zonY][zonX] = zonScore
