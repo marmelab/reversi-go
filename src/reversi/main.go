@@ -7,6 +7,7 @@ import (
 	"reversi/game/game"
 	"reversi/game/player"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -16,30 +17,35 @@ func main() {
 	playerBlack := askForPlayer("\n### Black player ###\n", cell.TypeBlack)
 	playerWhite := askForPlayer("\n### White player ###\n", cell.TypeWhite)
 
-	party := game.New([]player.Player{playerBlack, playerWhite})
+	currentGame := game.New([]player.Player{playerBlack, playerWhite})
 
 	fmt.Println("\n########## INITIAL BOARD ##########")
-	fmt.Println(game.Render(party))
+	fmt.Println(game.Render(currentGame))
 	fmt.Println("\n########## GAME STARTED ##########")
 
 	var cellChange cell.Cell
+	var aiErr error
 	var err error
 
-	for !game.IsFinished(party) {
+	for !game.IsFinished(currentGame) {
 
-		fmt.Println(game.RenderAskBoard(party))
+		fmt.Println(game.RenderAskBoard(currentGame))
 
-		currentPlayer := game.GetCurrentPlayer(party)
+		currentPlayer := game.GetCurrentPlayer(currentGame)
 
 		if currentPlayer.HumanPlayer {
 			fmt.Printf("%s (%s), It's our turn !\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
-			cellChange = game.AskForCellChange(party)
+			cellChange = game.AskForCellChange(currentGame)
 		} else {
 			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
-			cellChange, _ = ai.GetBestCellChange(party, 0, 4)
+			cellChange, aiErr = ai.GetBestCellChangeInTime(currentGame.Board, currentPlayer.CellType, time.Millisecond*1500)
+			if aiErr != nil {
+				currentGame = game.SwitchPlayer(currentGame)
+				continue
+			}
 		}
 
-		party, err = game.PlayTurn(party, cellChange)
+		currentGame, err = game.PlayTurn(currentGame, cellChange)
 
 		if err != nil {
 			fmt.Println(err)
@@ -48,9 +54,9 @@ func main() {
 	}
 
 	fmt.Println("\n########## END OF GAME ##########\n")
-	fmt.Println(game.Render(party))
+	fmt.Println(game.Render(currentGame))
 
-	if winner, err := game.GetWinner(party); err == nil {
+	if winner, err := game.GetWinner(currentGame); err == nil {
 		fmt.Printf("\n########## %s (%s) WINS ! ##########\n\n", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
 	} else {
 		fmt.Println(err)

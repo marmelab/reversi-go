@@ -1,44 +1,70 @@
 package ai
 
 import (
-	"fmt"
+	"reflect"
 	"reversi/game/board"
 	"reversi/game/cell"
-	//"reversi/game/game"
-	//"reversi/game/player"
 	"testing"
+	"time"
 )
 
-// func BenchmarkGetBestCellChange(b *testing.B) {
-//
-// 	playerBlack := player.New("John", true, cell.TypeBlack)
-// 	playerWhite := player.New("Doe", true, cell.TypeWhite)
-//
-// 	party := game.New([]player.Player{playerBlack, playerWhite})
-//
-// 	for n := 0; n < b.N; n++ {
-// 		GetBestCellChangeInTime(party, 0, 1)
-// 	}
-//
-// }
-
-func TestGetBestCellChangeInTime(t *testing.T) {
+func BenchmarkGetBestCellChange(b *testing.B) {
 
 	currentBoard, _ := board.InitCells(board.New(8, 8))
-	fmt.Println(GetBestCellChangeInTime(currentBoard, cell.TypeBlack))
+
+	for n := 0; n < b.N; n++ {
+		GetBestCellChangeInTime(currentBoard, cell.TypeBlack, time.Second)
+	}
 
 }
 
-// func TestGetZoningScore(t *testing.T) {
-//
-// 	board := board.Board{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}}
-//
-// 	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 1500 {
-// 		t.Error("GetZoningScore should return 1500 for corner cell position")
-// 	}
-//
-// 	if GetZoningScore([]cell.Cell{cell.Cell{0, 1, 1}}, board) != 1000 {
-// 		t.Error("GetZoningScore should return 1500 for border cell position")
-// 	}
-//
-// }
+func TestGetZoningScore(t *testing.T) {
+
+	board, _ := board.InitCells(board.New(8, 8))
+
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 100 {
+		t.Error("GetZoningScore should return 100 for corner cell position")
+	}
+
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 2, 1}}, board) != 50 {
+		t.Error("GetZoningScore should return 50 for border cell position")
+	}
+
+}
+
+func TestGetSupremacyScoreShouldReturnAValidSupremacyScore(t *testing.T) {
+
+	if GetSupremacyScore(board.Board{{2, 2, 2, 2, 2}}, cell.TypeWhite) != 5 {
+		t.Error("GetSupremacyScore should return valid score")
+	}
+
+	if GetSupremacyScore(board.Board{{1, 1, 1, 2, 2}}, cell.TypeWhite) != -1 {
+		t.Error("GetSupremacyScore should return valid score")
+	}
+
+	if GetSupremacyScore(board.Board{{1, 1, 1, 2, 2, 0, 0, 0}}, cell.TypeWhite) != -4 {
+		t.Error("GetSupremacyScore should return valid score")
+	}
+
+}
+
+func TestBuildZoneScoringBoardShouldReturnAValidScoreMatrix(t *testing.T) {
+
+	expectedZoneScoringBoard := [][]int{
+		{100, 50, 50, 50, 50, 50, 50, 100},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{50, 0, 0, 0, 0, 0, 0, 50},
+		{100, 50, 50, 50, 50, 50, 50, 100},
+	}
+
+	zoneScoringBoard := BuildZoneScoringBoard(8, 8)
+
+	if !reflect.DeepEqual(zoneScoringBoard, expectedZoneScoringBoard) {
+		t.Error("BuildZoneScoringBoard should return a valid score matrix")
+	}
+
+}

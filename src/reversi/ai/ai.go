@@ -1,14 +1,11 @@
 package ai
 
 import (
-	//"errors"
+	"errors"
 	"math"
 	"reversi/game/board"
 	"reversi/game/cell"
-	//"reversi/game/game"
-	//"reversi/game/matrix"
-	//"reversi/game/player"
-	"fmt"
+	"reversi/game/matrix"
 	"time"
 )
 
@@ -17,76 +14,84 @@ type Node struct {
 	RootCellChange cell.Cell
 	IsOpponent     bool
 	CellType       uint8
+	Depth          int
 }
 
-type ScoreNode struct {
-	RootCellChange cell.Cell
-	Score          int
-}
-
-func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8) cell.Cell {
+func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
 	nodes := make(chan Node)
-	scores := make(chan ScoreNode)
 	timeout := make(chan bool, 1)
-
-	defer close(nodes)
-	defer close(scores)
+	bestCellChange := cell.Cell{}
 
 	go func() {
-		time.Sleep(time.Second * 5)
+		time.Sleep(duration)
 		timeout <- true
 	}()
 
-	fmt.Println("start")
+	legalCellChanges := board.GetLegalCellChangesForCellType(cellType, currentBoard)
 
-	go ProcessNodeScoring(Node{currentBoard, cell.Cell{}, false, cellType}, nodes)
+	if len(legalCellChanges) == 0 {
+		return bestCellChange, errors.New("There's no legal cell change for this cellType.")
+	}
+
+	for _, cellChange := range legalCellChanges {
+		RecursiveNodeVisitor(Node{currentBoard, cellChange, false, cellType, 1}, nodes)
+	}
 
 	finished := false
 	maxScore := -math.MaxInt32
-	cellChange := cell.Cell{}
 
 	for !finished {
 		select {
 		case finished = <-timeout:
 		case node := <-nodes:
-			fmt.Println("Receive Node")
-			scores <- ScoreNode{node.RootCellChange, Score(node)}
-		case score := <-scores:
-			fmt.Println("Receive ScoreNode")
-			if score.Score > maxScore {
-				maxScore = score.Score
-				cellChange = score.RootCellChange
+			score := Score(node)
+			if score > maxScore {
+				maxScore = score
+				bestCellChange = node.RootCellChange
 			}
 		}
 	}
 
-	return cellChange
+	return bestCellChange, nil
 
 }
 
-func ProcessNodeScoring(rootNode Node, nodes chan Node) {
+func NodeVisitor(node Node) chan Node {
+	out := make(chan Node)
+	go func() {
+		legalCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
+		for _, cellChange := range legalCellChanges {
+			nodeBoard := GetBoardFromCellChange(node.Board, cellChange)
+			out <- Node{nodeBoard, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1}
+		}
+		close(out)
+	}()
+	return out
+}
 
-	fmt.Println("ProcessNode ", rootNode)
-
-	var processNodes []Node
-
-	// Scoring current node stage for each subnode
-	for _, cellChange := range board.GetLegalCellChangesForCellType(rootNode.CellType, rootNode.Board) {
-		node := Node{GetBoardFromCellChange(rootNode.Board, cellChange), cellChange, !rootNode.IsOpponent, cell.GetReverseCellType(rootNode.CellType)}
-		nodes <- node
-		processNodes = append(processNodes, node)
-	}
-
-	// Recursively scoring subnodes stages for each node at this stage
-	for _, node := range processNodes {
-		ProcessNodeScoring(node, nodes)
-	}
-
+func RecursiveNodeVisitor(node Node, out chan Node) {
+	go func() {
+		visitorChannel := NodeVisitor(node)
+		for visitedNode := range visitorChannel {
+			out <- visitedNode
+			RecursiveNodeVisitor(visitedNode, out)
+		}
+	}()
 }
 
 func Score(node Node) int {
-	return 0
+
+	// Enhance with "techniques particulières à Othello"
+	// http://www.ffothello.org/informatique/algorithmes/
+
+	availableCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
+
+	zoningScore := GetZoningScore(availableCellChanges, node.Board)
+	supremacyScore := GetSupremacyScore(node.Board, node.CellType)
+
+	return zoningScore + supremacyScore
+
 }
 
 func GetBoardFromCellChange(currentBoard board.Board, cellChange cell.Cell) board.Board {
@@ -94,143 +99,73 @@ func GetBoardFromCellChange(currentBoard board.Board, cellChange cell.Cell) boar
 	return board.DrawCells(cellChangesToApply, currentBoard)
 }
 
-// const ScoringLevelLimit int = math.MaxInt8
-//
-// func GetMaxScore(currentGame game.Game, depth int, depthLimit int) int {
-//
-// 	if game.IsFinished(currentGame) || depth >= depthLimit {
-// 		return Score(currentGame.Board, game.GetCurrentPlayer(currentGame), depth)
-// 	}
-//
-// 	reversePlayerMaxScore := -ScoringLevelLimit
-//
-// 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
-//
-// 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
-// 		reversePlayerScore := GetMinScore(virtualGame, depth+1, depthLimit)
-//
-// 		if reversePlayerScore > reversePlayerMaxScore {
-// 			reversePlayerMaxScore = reversePlayerScore
-// 		}
-//
-// 	}
-//
-// 	return reversePlayerMaxScore
-//
-// }
-//
-// func GetMinScore(currentGame game.Game, depth int, depthLimit int) int {
-//
-// 	if game.IsFinished(currentGame) || depth >= depthLimit {
-// 		return Score(currentGame.Board, game.GetCurrentPlayer(currentGame), depth)
-// 	}
-//
-// 	reversePlayerMinScore := ScoringLevelLimit
-//
-// 	for _, cellChange := range game.GetAvailableCellChanges(currentGame) {
-//
-// 		virtualGame, _ := game.PlayTurn(currentGame, cellChange)
-// 		reversePlayerScore := GetMaxScore(virtualGame, depth+1, depthLimit)
-//
-// 		if reversePlayerScore < reversePlayerMinScore {
-// 			reversePlayerMinScore = reversePlayerScore
-// 		}
-//
-// 	}
-//
-// 	return reversePlayerMinScore
-//
-// }
-//
-// func GetBestCellChange(currentGame game.Game, depth int, depthLimit int) (cell.Cell, error) {
-//
-// 	maxScore := -ScoringLevelLimit
-// 	bestCellChange := cell.Cell{}
-//
-// 	availableCellChanges := game.GetAvailableCellChanges(currentGame)
-//
-// 	if len(availableCellChanges) == 0 {
-// 		return bestCellChange, errors.New("AI can't play!")
-// 	}
-//
-// 	if len(availableCellChanges) == 1 {
-// 		return availableCellChanges[0], nil
-// 	}
-//
-// 	for _, cellChange := range availableCellChanges {
-//
-// 		virtualGame, playTurnError := game.PlayTurn(currentGame, cellChange)
-// 		cellChangeScore := GetMaxScore(virtualGame, depth, depthLimit)
-//
-// 		if playTurnError != nil {
-// 			return bestCellChange, playTurnError
-// 		}
-//
-// 		if cellChangeScore > maxScore {
-// 			maxScore = cellChangeScore
-// 			bestCellChange = cellChange
-// 		}
-//
-// 	}
-//
-// 	return bestCellChange, nil
-//
-// }
-//
-// func Score(gameBoard board.Board, gamePlayer player.Player, depth int) int {
-//
-// 	// Enhance with "techniques particulières à Othello"
-// 	// http://www.ffothello.org/informatique/algorithmes/
-//
-// 	availableCellChanges := board.GetLegalCellChangesForCellType(gamePlayer.CellType, gameBoard)
-//
-// 	supremacyScore := GetSupremacyScore(gameBoard, gamePlayer.CellType, depth)
-// 	zoningScore := GetZoningScore(availableCellChanges, gameBoard)
-//
-// 	return supremacyScore + zoningScore
-//
-// }
-//
-// func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
-//
-// 	zoningScore := 0
-// 	xSize, ySize := matrix.GetSize(gameBoard)
-//
-// 	// Scoring Strategy
-// 	// +1000 for board limits
-// 	// +1500 for board corners
-//
-// 	for _, cellChange := range availableCellChanges {
-// 		xPos := int(cellChange.X)
-// 		yPos := int(cellChange.Y)
-// 		if xPos == 0 || xPos == xSize-1 || yPos == 0 || yPos == ySize-1 {
-// 			zoningScore += 1000
-// 			if (yPos == 0 && xPos == 0) || (yPos == ySize-1 && xPos == xSize-1) || (yPos == ySize-1 && xPos == 0) || (yPos == 0 && xPos == xSize-1) {
-// 				zoningScore += 500
-// 			}
-// 		}
-// 	}
-//
-// 	return zoningScore
-//
-// }
-//
-// func GetSupremacyScore(gameBoard board.Board, cellType uint8, depth int) int {
-//
-// 	cellDist := board.GetCellDistribution(gameBoard)
-// 	reverseCellType := cell.GetReverseCellType(cellType)
-//
-// 	// Score based on the number of cell of the player's cellType
-// 	// The depth parameter permit to highlight near distribution configurations
-//
-// 	if cellDist[cellType] > cellDist[reverseCellType] {
-// 		return ScoringLevelLimit - depth
-// 	}
-//
-// 	if cellDist[cellType] < cellDist[reverseCellType] {
-// 		return -ScoringLevelLimit + depth
-// 	}
-//
-// 	return 0
-//
-// }
+func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
+
+	zoningScore := 0
+	xSize, ySize := matrix.GetSize(gameBoard)
+
+	//Generate zoning score board
+
+	zoningScoreBoard := BuildZoneScoringBoard(xSize, ySize)
+
+	// Scoring Strategy
+	// +50 for board limits (except around corners)
+	// +100 for board corners
+
+	for _, cellChange := range availableCellChanges {
+
+		xPos := int(cellChange.X)
+		yPos := int(cellChange.Y)
+
+		zoningScore += zoningScoreBoard[yPos][xPos]
+
+	}
+
+	return zoningScore
+
+}
+
+func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
+
+	zoningScoreBoard := [][]int{}
+	var zonScore int
+
+	for zonY := 0; zonY < ySize; zonY++ {
+		zoningScoreBoard = append(zoningScoreBoard, make([]int, xSize, xSize))
+		for zonX := 0; zonX < xSize; zonX++ {
+
+			zonScore = 0
+
+			// Borders
+
+			if zonX == 0 || zonX == xSize-1 || zonY == 0 || zonY == ySize-1 {
+				zonScore += 50
+			}
+
+			// Corner
+
+			if (zonX == 0 && zonY == 0) || (zonX == xSize-1 && zonY == ySize-1) || (zonX == 0 && zonY == ySize-1) || (zonX == xSize-1 && zonY == 0) {
+				zonScore += 50
+			}
+
+			zoningScoreBoard[zonY][zonX] = zonScore
+
+		}
+	}
+
+	return zoningScoreBoard
+
+}
+
+func GetSupremacyScore(gameBoard board.Board, cellType uint8) int {
+
+	cellDist := board.GetCellDistribution(gameBoard)
+	reverseCellType := cell.GetReverseCellType(cellType)
+
+	// Score based on the number of cell of the player's cellType
+	// Nb of player cells - Nb of opponent cells - number of possibilities
+	// -(boardX*boardY) < score < boardX*boardY
+
+	return int(cellDist[cellType]) - int(cellDist[reverseCellType]) - int(cellDist[cell.TypeEmpty])
+
+}

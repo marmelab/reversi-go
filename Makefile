@@ -22,11 +22,11 @@ run:
 # Tests #########################
 
 test:
-	# $(GO_BIN) bash -c "cd src/reversi/game/player && go test"
-	# $(GO_BIN) bash -c "cd src/reversi/game/vector && go test"
-	# $(GO_BIN) bash -c "cd src/reversi/game/cell && go test"
-	# $(GO_BIN) bash -c "cd src/reversi/game/board && go test"
-	# $(GO_BIN) bash -c "cd src/reversi/game/game && go test"
+	$(GO_BIN) bash -c "cd src/reversi/game/player && go test"
+	$(GO_BIN) bash -c "cd src/reversi/game/vector && go test"
+	$(GO_BIN) bash -c "cd src/reversi/game/cell && go test"
+	$(GO_BIN) bash -c "cd src/reversi/game/board && go test"
+	$(GO_BIN) bash -c "cd src/reversi/game/game && go test"
 	$(GO_BIN) bash -c "cd src/reversi/ai && go test"
 
 # Lint ##########################
