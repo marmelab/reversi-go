@@ -35,6 +35,10 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 		return bestCellChange, errors.New("There's no legal cell change for this cellType.")
 	}
 
+	if len(legalCellChanges) == 1 {
+		return legalCellChanges[0], nil
+	}
+
 	for _, cellChange := range legalCellChanges {
 		RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}

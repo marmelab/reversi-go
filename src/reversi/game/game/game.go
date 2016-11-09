@@ -1,7 +1,6 @@
 package game
 
 import (
-	"errors"
 	"fmt"
 	"reversi/game/board"
 	"reversi/game/cell"
@@ -65,7 +64,7 @@ func GetWinner(game Game) (player.Player, error) {
 	if reversePlayerScore > currentPlayerScore {
 		return GetReversePlayer(game), nil
 	}
-	return player.Player{}, errors.New("There's no winner")
+	return player.Player{}, NoWinnerError{"There's no winner"}
 }
 
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
@@ -83,11 +82,13 @@ func PlayTurn(currentGame Game, cellChange cell.Cell) (Game, error) {
 	newGame := PlayCellChange(currentGame, cellChange)
 
 	if !CanPlayerChangeCells(GetReversePlayer(newGame), newGame) {
-		return newGame, errors.New("Opponent can't play! Play Again!")
-	}
 
-	if !CanPlayerChangeCells(GetCurrentPlayer(newGame), newGame) {
-		return newGame, errors.New("There's no cell to play.")
+		if !CanPlayerChangeCells(GetCurrentPlayer(newGame), newGame) {
+			return newGame, NoPossibilityError{"There's no cell to play."}
+		}
+
+		return newGame, NoPlayerPossibilityError{"Opponent can't play! Play Again!"}
+
 	}
 
 	return SwitchPlayer(newGame), nil
@@ -123,4 +124,30 @@ func AskForCellChange(game Game) cell.Cell {
 
 	return availableCellChanges[legalCellChangeChoice]
 
+}
+
+// Game Errors
+
+type NoPlayerPossibilityError struct {
+	msg string
+}
+
+func (e NoPlayerPossibilityError) Error() string {
+	return e.msg
+}
+
+type NoPossibilityError struct {
+	msg string
+}
+
+func (e NoPossibilityError) Error() string {
+	return e.msg
+}
+
+type NoWinnerError struct {
+	msg string
+}
+
+func (e NoWinnerError) Error() string {
+	return e.msg
 }

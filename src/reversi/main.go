@@ -24,8 +24,7 @@ func main() {
 	fmt.Println("\n########## GAME STARTED ##########")
 
 	var cellChange cell.Cell
-	var aiErr error
-	var err error
+	var playErr error
 
 	for !game.IsFinished(currentGame) {
 
@@ -38,17 +37,16 @@ func main() {
 			cellChange = game.AskForCellChange(currentGame)
 		} else {
 			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
-			cellChange, aiErr = ai.GetBestCellChangeInTime(currentGame.Board, currentPlayer.CellType, time.Millisecond*1500)
-			if aiErr != nil {
-				currentGame = game.SwitchPlayer(currentGame)
-				continue
-			}
+			cellChange, _ = ai.GetBestCellChangeInTime(currentGame.Board, currentPlayer.CellType, time.Millisecond*1500)
 		}
 
-		currentGame, err = game.PlayTurn(currentGame, cellChange)
+		currentGame, playErr = game.PlayTurn(currentGame, cellChange)
 
-		if err != nil {
-			fmt.Println(err)
+		if !game.IsFinished(currentGame) && playErr != nil {
+			fmt.Println(playErr)
+			if _, ok := playErr.(game.NoPossibilityError); ok {
+				break
+			}
 		}
 
 	}
