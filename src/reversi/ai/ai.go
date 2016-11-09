@@ -22,7 +22,6 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 
 	nodes := make(chan Node, 100)
 	timeout := make(chan bool, 1)
-	bestCellChange := cell.Cell{}
 
 	go func() {
 		time.Sleep(duration)
@@ -32,7 +31,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 	legalCellChanges := board.GetLegalCellChangesForCellType(cellType, currentBoard)
 
 	if len(legalCellChanges) == 0 {
-		return bestCellChange, errors.New("There's no legal cell change for this cellType.")
+		return cell.Cell{}, errors.New("There's no legal cell change for this cellType.")
 	}
 
 	if len(legalCellChanges) == 1 {
@@ -43,12 +42,19 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}
 
+	return CaptureBestCellChange(nodes, timeout), nil
+
+}
+
+func CaptureBestCellChange(nodes chan Node, stopProcess chan bool) cell.Cell {
+
+	bestCellChange := cell.Cell{}
 	finished := false
 	maxScore := 0
 
 	for !finished {
 		select {
-		case finished = <-timeout:
+		case finished = <-stopProcess:
 		case node := <-nodes:
 			score := Score(node, maxScore)
 			if score > maxScore {
@@ -58,7 +64,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 		}
 	}
 
-	return bestCellChange, nil
+	return bestCellChange
 
 }
 
