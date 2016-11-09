@@ -11,6 +11,7 @@ import (
 
 type Node struct {
 	Board          board.Board
+	cellChange     cell.Cell
 	RootCellChange cell.Cell
 	IsOpponent     bool
 	CellType       uint8
@@ -35,7 +36,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 	}
 
 	for _, cellChange := range legalCellChanges {
-		RecursiveNodeVisitor(Node{currentBoard, cellChange, false, cellType, 1}, nodes)
+		RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}
 
 	finished := false
@@ -63,19 +64,18 @@ func NodeVisitor(node Node) chan Node {
 		legalCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
 		for _, cellChange := range legalCellChanges {
 			nodeBoard := GetBoardFromCellChange(node.Board, cellChange)
-			out <- Node{nodeBoard, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1}
+			out <- Node{nodeBoard, cellChange, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1}
 		}
 		close(out)
 	}()
 	return out
 }
 
-func RecursiveNodeVisitor(node Node, out chan Node) {
+func RecursiveNodeVisitor(rootNode Node, out chan Node) {
 	go func() {
-		visitorChannel := NodeVisitor(node)
-		for visitedNode := range visitorChannel {
-			out <- visitedNode
-			RecursiveNodeVisitor(visitedNode, out)
+		for node := range NodeVisitor(rootNode) {
+			out <- node
+			RecursiveNodeVisitor(node, out)
 		}
 	}()
 }
@@ -125,6 +125,19 @@ func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int
 
 }
 
+func GetSupremacyScore(gameBoard board.Board, cellType uint8) int {
+
+	cellDist := board.GetCellDistribution(gameBoard)
+	reverseCellType := cell.GetReverseCellType(cellType)
+
+	// Score based on the number of cell of the player's cellType
+	// Nb of player cells - Nb of opponent cells - number of possibilities
+	// -(boardX*boardY) < score < boardX*boardY
+
+	return int(cellDist[cellType]) - int(cellDist[reverseCellType]) - int(cellDist[cell.TypeEmpty])
+
+}
+
 func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 
 	zoningScoreBoard := [][]int{}
@@ -137,31 +150,26 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 			zonScore = 0
 
 			// Helpers
-
 			isAroundCornerVertical := (x == 1 && (y < 2 || y > ySize-3)) || (x == xSize-2 && (y < 2 || y > ySize-3))
 			isAroundCornerHorizontal := (y == 1 && (x < 2 || x > xSize-3)) || (y == ySize-2 && (x < 2 || x > xSize-3))
 			isAroundCorner := isAroundCornerVertical || isAroundCornerHorizontal
 
 			// Borders (except around corner)
-
 			if (x == 0 || x == xSize-1 || y == 0 || y == ySize-1) && !isAroundCorner {
 				zonScore += 50
 			}
 
 			// Center zoneScoringBoard
-
 			if (x > 1 && x < xSize-2 && y == 2) || (x > 1 && x < xSize-2 && y == ySize-3) || (y > 1 && y < ySize-2 && x == xSize-3) || (y > 1 && y < ySize-2 && x == 2) {
 				zonScore += 50
 			}
 
 			// Corner
-
 			if (x == 0 && y == 0) || (x == xSize-1 && y == ySize-1) || (x == 0 && y == ySize-1) || (x == xSize-1 && y == 0) {
 				zonScore += 150
 			}
 
 			// Negate around corners
-
 			if isAroundCorner {
 				zonScore -= 50
 			}
@@ -172,18 +180,5 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 	}
 
 	return zoningScoreBoard
-
-}
-
-func GetSupremacyScore(gameBoard board.Board, cellType uint8) int {
-
-	cellDist := board.GetCellDistribution(gameBoard)
-	reverseCellType := cell.GetReverseCellType(cellType)
-
-	// Score based on the number of cell of the player's cellType
-	// Nb of player cells - Nb of opponent cells - number of possibilities
-	// -(boardX*boardY) < score < boardX*boardY
-
-	return int(cellDist[cellType]) - int(cellDist[reverseCellType]) - int(cellDist[cell.TypeEmpty])
 
 }
