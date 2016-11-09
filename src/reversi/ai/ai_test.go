@@ -2,7 +2,6 @@ package ai
 
 import (
 	//"fmt"
-	"reflect"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"testing"
@@ -49,19 +48,23 @@ func TestNodeVisitorShouldReturnValidNodeChan(t *testing.T) {
 		t.Error("NodeVisitor should return Node Chan with valid values")
 	}
 
-	if n := <-nodes; (n.cellChange != cell.Cell{3, 2, cell.TypeWhite}) {
+	if len(nodes) != 4 {
 		throwErr()
 	}
 
-	if n := <-nodes; (n.cellChange != cell.Cell{2, 3, cell.TypeWhite}) {
+	if n := nodes[0]; (n.cellChange != cell.Cell{3, 2, cell.TypeWhite}) {
 		throwErr()
 	}
 
-	if n := <-nodes; (n.cellChange != cell.Cell{5, 4, cell.TypeWhite}) {
+	if n := nodes[1]; (n.cellChange != cell.Cell{2, 3, cell.TypeWhite}) {
 		throwErr()
 	}
 
-	if n := <-nodes; (n.cellChange != cell.Cell{4, 5, cell.TypeWhite}) {
+	if n := nodes[2]; (n.cellChange != cell.Cell{5, 4, cell.TypeWhite}) {
+		throwErr()
+	}
+
+	if n := nodes[3]; (n.cellChange != cell.Cell{4, 5, cell.TypeWhite}) {
 		throwErr()
 	}
 
@@ -72,13 +75,13 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 	nodes := make(chan Node, 1)
 	currBoard, _ := board.InitCells(board.New(8, 8))
 
-	RecursiveNodeVisitor(Node{currBoard, cell.Cell{}, cell.Cell{}, false, cell.TypeWhite, 0}, nodes)
+	go RecursiveNodeVisitor(Node{currBoard, cell.Cell{}, cell.Cell{}, false, cell.TypeWhite, 0}, nodes)
 
 	countFirstLevel := 0
 	countSecondLevel := 0
 	countThirdLevel := 0
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 5000; i++ {
 
 		node := <-nodes
 
@@ -98,59 +101,6 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 
 	if countFirstLevel != 4 || countSecondLevel != 12 || countThirdLevel != 56 {
 		t.Error("RecursiveNodeVisitor should visit node recursively")
-	}
-
-}
-
-func TestGetZoningScore(t *testing.T) {
-
-	board, _ := board.InitCells(board.New(8, 8))
-
-	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 200 {
-		t.Error("GetZoningScore should return 200 for corner cell position")
-	}
-
-	if GetZoningScore([]cell.Cell{cell.Cell{0, 2, 1}}, board) != 50 {
-		t.Error("GetZoningScore should return 50 for border cell position")
-	}
-
-}
-
-func TestGetSupremacyScoreShouldReturnAValidSupremacyScore(t *testing.T) {
-
-	if GetSupremacyScore(board.Board{{2, 2, 2, 2, 2}}, cell.TypeWhite) != 5 {
-		t.Error("GetSupremacyScore should return valid score")
-	}
-
-	if GetSupremacyScore(board.Board{{1, 1, 1, 2, 2}}, cell.TypeWhite) != -1 {
-		t.Error("GetSupremacyScore should return valid score")
-	}
-
-	if GetSupremacyScore(board.Board{{1, 1, 1, 2, 2, 0, 0, 0}}, cell.TypeWhite) != -4 {
-		t.Error("GetSupremacyScore should return valid score")
-	}
-
-}
-
-func TestBuildZoneScoringBoardShouldReturnAValidScoreMatrix(t *testing.T) {
-
-	expectedZoneScoringBoard := [][]int{
-		{200, -50, 50, 50, 50, 50, -50, 200},
-		{-50, -50, 0, 0, 0, 0, -50, -50},
-		{50, 0, 50, 50, 50, 50, 0, 50},
-		{50, 0, 50, 0, 0, 50, 0, 50},
-		{50, 0, 50, 0, 0, 50, 0, 50},
-		{50, 0, 50, 50, 50, 50, 0, 50},
-		{-50, -50, 0, 0, 0, 0, -50, -50},
-		{200, -50, 50, 50, 50, 50, -50, 200},
-	}
-
-	zoneScoringBoard := BuildZoneScoringBoard(8, 8)
-
-	//fmt.Println(zoneScoringBoard)
-
-	if !reflect.DeepEqual(zoneScoringBoard, expectedZoneScoringBoard) {
-		t.Error("BuildZoneScoringBoard should return a valid score matrix")
 	}
 
 }

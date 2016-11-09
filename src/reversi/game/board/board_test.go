@@ -120,13 +120,13 @@ func TestGetDepartureCellsShouldReturnDepartureCells(t *testing.T) {
 
 }
 
-func DrawCellsShouldDrawCellOnBoard(t *testing.T) {
+func ComputeCellsShouldReturnNewBoardFromComputation(t *testing.T) {
 
 	expectedBoard := Board{{cell.TypeBlack}}
-	board := DrawCells([]cell.Cell{cell.New(uint8(0), uint8(0), cell.TypeBlack)}, Board{})
+	board := ComputeCells([]cell.Cell{cell.New(uint8(0), uint8(0), cell.TypeBlack)}, Board{})
 
 	if !reflect.DeepEqual(board, expectedBoard) {
-		t.Error("DrawCells should draw cells and return a new board")
+		t.Error("ComputeCells should return a new board from computation")
 	}
 
 }

@@ -27,7 +27,7 @@ func InitCells(board Board) (Board, error) {
 	if !IsValidBoardSize(xSize, ySize) {
 		return board, errors.New("Invalid board Size, x/y dim must be even to place departure cells")
 	}
-	return DrawCells(GetDepartureCells(board), board), nil
+	return ComputeCells(GetDepartureCells(board), board), nil
 }
 
 func GetDepartureCells(board Board) []cell.Cell {
@@ -76,7 +76,7 @@ func IsFull(board Board) bool {
 	return true
 }
 
-func DrawCells(cells []cell.Cell, board Board) Board {
+func ComputeCells(cells []cell.Cell, board Board) Board {
 	newBoard := Copy(board)
 	for _, cell := range cells {
 		newBoard[cell.Y][cell.X] = cell.CellType

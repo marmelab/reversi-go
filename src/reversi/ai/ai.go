@@ -2,9 +2,10 @@ package ai
 
 import (
 	"errors"
+	//"fmt"
+	"reversi/ai/scoring"
 	"reversi/game/board"
 	"reversi/game/cell"
-	"reversi/game/matrix"
 	"time"
 )
 
@@ -39,7 +40,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 	}
 
 	for _, cellChange := range legalCellChanges {
-		RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
+		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}
 
 	finished := false
@@ -61,26 +62,21 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 
 }
 
-func NodeVisitor(node Node) chan Node {
-	out := make(chan Node)
-	go func() {
-		legalCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
-		for _, cellChange := range legalCellChanges {
-			nodeBoard := GetBoardFromCellChange(node.Board, cellChange)
-			out <- Node{nodeBoard, cellChange, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1}
-		}
-		close(out)
-	}()
-	return out
+func RecursiveNodeVisitor(rootNode Node, out chan Node) {
+	for _, node := range NodeVisitor(rootNode) {
+		out <- node
+		go RecursiveNodeVisitor(node, out)
+	}
 }
 
-func RecursiveNodeVisitor(rootNode Node, out chan Node) {
-	go func() {
-		for node := range NodeVisitor(rootNode) {
-			out <- node
-			RecursiveNodeVisitor(node, out)
-		}
-	}()
+func NodeVisitor(node Node) []Node {
+	out := []Node{}
+	legalCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
+	for _, cellChange := range legalCellChanges {
+		nodeBoard := GetBoardFromCellChange(node.Board, cellChange)
+		out = append(out, Node{nodeBoard, cellChange, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1})
+	}
+	return out
 }
 
 func Score(node Node, scoreReference int) int {
@@ -90,8 +86,8 @@ func Score(node Node, scoreReference int) int {
 
 	availableCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
 
-	zoningScore := GetZoningScore(availableCellChanges, node.Board)
-	supremacyScore := GetSupremacyScore(node.Board, node.CellType)
+	zoningScore := scoring.GetZoningScore(availableCellChanges, node.Board)
+	supremacyScore := scoring.GetSupremacyScore(node.Board, node.CellType)
 
 	totalScore := zoningScore + supremacyScore
 
@@ -105,89 +101,5 @@ func Score(node Node, scoreReference int) int {
 
 func GetBoardFromCellChange(currentBoard board.Board, cellChange cell.Cell) board.Board {
 	cellChangesToApply := append(board.GetFlippedCellsFromCellChange(cellChange, currentBoard), cellChange)
-	return board.DrawCells(cellChangesToApply, currentBoard)
-}
-
-func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
-
-	zoningScore := 0
-	xSize, ySize := matrix.GetSize(gameBoard)
-
-	//Generate zoning score board
-
-	zoningScoreBoard := BuildZoneScoringBoard(xSize, ySize)
-
-	// Scoring Strategy
-	// +50 for board limits (except around corners)
-	// +100 for board corners
-
-	for _, cellChange := range availableCellChanges {
-
-		xPos := int(cellChange.X)
-		yPos := int(cellChange.Y)
-
-		zoningScore += zoningScoreBoard[yPos][xPos]
-
-	}
-
-	return zoningScore
-
-}
-
-func GetSupremacyScore(gameBoard board.Board, cellType uint8) int {
-
-	cellDist := board.GetCellDistribution(gameBoard)
-	reverseCellType := cell.GetReverseCellType(cellType)
-
-	// Score based on the number of cell of the player's cellType
-	// Nb of player cells - Nb of opponent cells - number of possibilities
-	// -(boardX*boardY) < score < boardX*boardY
-
-	return int(cellDist[cellType]) - int(cellDist[reverseCellType]) - int(cellDist[cell.TypeEmpty])
-
-}
-
-func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
-
-	zoningScoreBoard := [][]int{}
-	var zonScore int
-
-	for y := 0; y < ySize; y++ {
-		zoningScoreBoard = append(zoningScoreBoard, make([]int, xSize, xSize))
-		for x := 0; x < xSize; x++ {
-
-			zonScore = 0
-
-			// Helpers
-			isAroundCornerVertical := (x == 1 && (y < 2 || y > ySize-3)) || (x == xSize-2 && (y < 2 || y > ySize-3))
-			isAroundCornerHorizontal := (y == 1 && (x < 2 || x > xSize-3)) || (y == ySize-2 && (x < 2 || x > xSize-3))
-			isAroundCorner := isAroundCornerVertical || isAroundCornerHorizontal
-
-			// Borders (except around corner)
-			if (x == 0 || x == xSize-1 || y == 0 || y == ySize-1) && !isAroundCorner {
-				zonScore += 50
-			}
-
-			// Center zoneScoringBoard
-			if (x > 1 && x < xSize-2 && y == 2) || (x > 1 && x < xSize-2 && y == ySize-3) || (y > 1 && y < ySize-2 && x == xSize-3) || (y > 1 && y < ySize-2 && x == 2) {
-				zonScore += 50
-			}
-
-			// Corner
-			if (x == 0 && y == 0) || (x == xSize-1 && y == ySize-1) || (x == 0 && y == ySize-1) || (x == xSize-1 && y == 0) {
-				zonScore += 150
-			}
-
-			// Negate around corners
-			if isAroundCorner {
-				zonScore -= 50
-			}
-
-			zoningScoreBoard[y][x] = zonScore
-
-		}
-	}
-
-	return zoningScoreBoard
-
+	return board.ComputeCells(cellChangesToApply, currentBoard)
 }

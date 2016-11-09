@@ -64,7 +64,7 @@ func GetWinner(game Game) (player.Player, error) {
 	if reversePlayerScore > currentPlayerScore {
 		return GetReversePlayer(game), nil
 	}
-	return player.Player{}, NoWinnerError{"There's no winner"}
+	return player.Player{}, NoWinnerError{"That's a draw!"}
 }
 
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
@@ -102,7 +102,7 @@ func NoBodyCanApplyCellChange(currentGame Game) bool {
 func PlayCellChange(game Game, cellChange cell.Cell) Game {
 	cellChanges := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
 	return Game{
-		board.DrawCells(cellChanges, game.Board),
+		board.ComputeCells(cellChanges, game.Board),
 		game.Players,
 		game.CurrPlayerIndex,
 	}
