@@ -47,13 +47,11 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 	}
 
 	// Start scoring workers
-
 	for i := 0; i < SCORING_WORKER_COUNT; i++ {
 		go ScoringWorker(nodes, scores)
 	}
 
 	// Start board graph visitors
-
 	for _, cellChange := range legalCellChanges {
 		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}
@@ -112,13 +110,15 @@ func Score(node Node) int {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
+	// http://www.ffothello.org/othello/principes-strategiques/
 
 	availableCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
 
 	zoningScore := scoring.GetZoningScore(availableCellChanges, node.Board)
 	supremacyScore := scoring.GetSupremacyScore(node.Board, node.CellType)
+	possibilitiesScore := scoring.GetPossibilitiesScore(len(availableCellChanges), node.Depth)
 
-	totalScore := zoningScore + supremacyScore
+	totalScore := zoningScore + supremacyScore + possibilitiesScore
 
 	if node.IsOpponent {
 		return -totalScore

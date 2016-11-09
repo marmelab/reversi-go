@@ -17,6 +17,21 @@ func BenchmarkGetBestCellChange(b *testing.B) {
 
 }
 
+func BenchmarkScore(b *testing.B) {
+
+	currentBoard, _ := board.InitCells(board.New(8, 8))
+
+	currentBoard[4][5] = cell.TypeBlack
+	currentBoard[4][2] = cell.TypeWhite
+
+	node := Node{currentBoard, cell.Cell{}, cell.Cell{}, false, cell.TypeWhite, 0}
+
+	for n := 0; n < b.N; n++ {
+		Score(node)
+	}
+
+}
+
 func TestGetBestCellChangeInTimeShouldReturnAnErrorIfThereAreNoPossibilities(t *testing.T) {
 
 	board := board.Board{{cell.TypeEmpty, cell.TypeBlack, cell.TypeBlack, cell.TypeWhite}}
@@ -71,7 +86,7 @@ func TestNodeVisitorShouldReturnValidNodeChan(t *testing.T) {
 
 func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 
-	nodes := make(chan Node, 1)
+	nodes := make(chan Node, 100)
 	currBoard, _ := board.InitCells(board.New(8, 8))
 
 	go RecursiveNodeVisitor(Node{currBoard, cell.Cell{}, cell.Cell{}, false, cell.TypeWhite, 0}, nodes)
@@ -95,6 +110,27 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 
 	if countFirstLevel != 4 || countSecondLevel != 12 {
 		t.Error("RecursiveNodeVisitor should visit node recursively")
+	}
+
+}
+
+func TestCaptureBestCellChangeShouldReturnCellChangeFromTheMaxScoredScore(t *testing.T) {
+
+	scores := make(chan Scoring, 4)
+	finish := make(chan bool, 1)
+
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 1}, time.Second, 500}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{0, 0, cell.TypeBlack}, false, cell.TypeBlack, 2}, time.Second, 6000}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 3}, time.Second, 2000}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 4}, time.Second, 1000}
+
+	go func() {
+		time.Sleep(time.Second)
+		finish <- true
+	}()
+
+	if CaptureBestCellChange(scores, finish) != (cell.Cell{0, 0, cell.TypeBlack}) {
+		t.Error("CaptureBestCellChange should capture best cell change from scores")
 	}
 
 }
