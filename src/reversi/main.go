@@ -10,34 +10,38 @@ import (
 	"time"
 )
 
+const CENTERING_BOARD_SPACE_COUNT int = 7
+const AI_REFLECTION_TIME time.Duration = time.Millisecond * 1500
+
 func main() {
 
 	fmt.Println("\n############# REVERSI #############")
 
-	playerBlack := askForPlayer("\n### Black player ###\n", cell.TypeBlack)
-	playerWhite := askForPlayer("\n### White player ###\n", cell.TypeWhite)
+	playerBlack := AskForPlayer("\n### Black player ###\n", cell.TypeBlack)
+	playerWhite := AskForPlayer("\n### White player ###\n", cell.TypeWhite)
 
 	currentGame := game.New([]player.Player{playerBlack, playerWhite})
 
 	fmt.Println("\n########## INITIAL BOARD ##########")
-	fmt.Println(game.Render(currentGame))
-	fmt.Println("\n########## GAME STARTED ##########")
+	fmt.Println(IndentString(game.Render(currentGame), CENTERING_BOARD_SPACE_COUNT))
+	fmt.Println("########## GAME STARTED ##########\n")
 
 	var cellChange cell.Cell
 	var playErr error
 
 	for !game.IsFinished(currentGame) {
 
-		fmt.Println(game.RenderAskBoard(currentGame))
-
 		currentPlayer := game.GetCurrentPlayer(currentGame)
 
 		if currentPlayer.HumanPlayer {
-			fmt.Printf("%s (%s), It's our turn !\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
+			fmt.Printf("## %s (%s), It's our turn ! Make a choice ##\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
+			fmt.Println(IndentString(game.RenderAskBoard(currentGame), CENTERING_BOARD_SPACE_COUNT))
 			cellChange = game.AskForCellChange(currentGame)
 		} else {
-			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
-			cellChange, _ = ai.GetBestCellChangeInTime(currentGame.Board, currentPlayer.CellType, time.Millisecond*1500)
+			fmt.Printf("## It's the turn of %s (%s), ...  ##\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
+			fmt.Println(IndentString(game.RenderAskBoard(currentGame), CENTERING_BOARD_SPACE_COUNT))
+			cellChange, _ = ai.GetBestCellChangeInTime(currentGame.Board, currentPlayer.CellType, AI_REFLECTION_TIME)
+			fmt.Printf("%s (%s) changes cell at %d, %d\n\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType), cellChange.X+1, cellChange.Y+1)
 		}
 
 		currentGame, playErr = game.PlayTurn(currentGame, cellChange)
@@ -52,7 +56,7 @@ func main() {
 	}
 
 	fmt.Println("\n########## END OF GAME ##########\n")
-	fmt.Println(game.Render(currentGame))
+	fmt.Println(IndentString(game.Render(currentGame), CENTERING_BOARD_SPACE_COUNT))
 
 	if winner, err := game.GetWinner(currentGame); err == nil {
 		fmt.Printf("\n########## %s (%s) WINS ! ##########\n\n", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
@@ -62,7 +66,11 @@ func main() {
 
 }
 
-func askForPlayer(header string, cellType uint8) player.Player {
+func IndentString(str string, spaceCount int) string {
+	return strings.Repeat(" ", spaceCount) + strings.Replace(str, "\n", "\n"+strings.Repeat(" ", spaceCount), -1)
+}
+
+func AskForPlayer(header string, cellType uint8) player.Player {
 
 	var isHumanInput string
 	var name string

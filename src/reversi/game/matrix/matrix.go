@@ -1,8 +1,10 @@
 package matrix
 
 import (
+	"bufio"
 	"bytes"
 	"github.com/fatih/color"
+	"github.com/olekukonko/tablewriter"
 	"reflect"
 	"strings"
 )
@@ -23,6 +25,23 @@ func Render(matrix [][]string) string {
 		buffer.WriteString("\n")
 	}
 	return buffer.String()
+}
+
+func RenderAscii(matrix [][]string) string {
+
+	var buffer bytes.Buffer
+	stringBuffer := bufio.NewWriter(&buffer)
+	table := tablewriter.NewWriter(stringBuffer)
+
+	for _, v := range matrix {
+		table.Append(v)
+	}
+
+	table.Render()
+	stringBuffer.Flush()
+
+	return buffer.String()
+
 }
 
 func GetSize(matrix interface{}) (int, int) {
