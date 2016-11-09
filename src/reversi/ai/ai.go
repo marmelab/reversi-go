@@ -3,6 +3,8 @@ package ai
 import (
 	"errors"
 	"reversi/ai/scoring"
+	"reversi/debug"
+	"fmt"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"time"
@@ -21,6 +23,7 @@ type Scoring struct {
 	ScoreNode   Node
 	ScoringTime time.Duration
 	Score       int
+	Detail      map[string]int
 }
 
 const SCORING_WORKER_COUNT int = 4
@@ -63,8 +66,8 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 func ScoringWorker(nodes <-chan Node, scores chan<- Scoring) {
 	for node := range nodes {
 		start := time.Now()
-		score := Score(node)
-		scores <- Scoring{node, time.Since(start), score}
+		score, details := Score(node)
+		scores <- Scoring{node, time.Since(start), score, details}
 	}
 }
 
@@ -74,13 +77,17 @@ func CaptureBestCellChange(scores chan Scoring, stopProcess chan bool) cell.Cell
 	finished := false
 	maxScore := 0
 
+	debug.Log("##############################")
+
 	for !finished {
 		select {
 		case finished = <-stopProcess:
 		case scoring := <-scores:
 			if scoring.Score > maxScore {
+				rcc := scoring.ScoreNode.RootCellChange
+				debug.Log(fmt.Sprintf("%d:%d - Score: %d (%s)", rcc.X+1, rcc.Y+1, scoring.Score, scoring.Detail))
 				maxScore = scoring.Score
-				bestCellChange = scoring.ScoreNode.RootCellChange
+				bestCellChange = rcc
 			}
 		}
 	}
@@ -106,7 +113,7 @@ func NodeVisitor(node Node) []Node {
 	return out
 }
 
-func Score(node Node) int {
+func Score(node Node) (int, map[string]int) {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
@@ -120,11 +127,17 @@ func Score(node Node) int {
 
 	totalScore := zoningScore + supremacyScore + possibilitiesScore
 
-	if node.IsOpponent {
-		return -totalScore
+	details := map[string]int{
+		"zoning":        zoningScore,
+		"supremacy":     supremacyScore,
+		"possibilities": possibilitiesScore,
 	}
 
-	return totalScore
+	if node.IsOpponent {
+		return -totalScore, details
+	}
+
+	return totalScore, details
 
 }
 
