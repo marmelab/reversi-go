@@ -96,7 +96,7 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 	countSecondLevel := 0
 	countThirdLevel := 0
 
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 10000; i++ {
 
 		node := <-nodes
 
@@ -125,10 +125,10 @@ func TestCaptureBestCellChangeShouldReturnCellChangeFromTheMaxScoredScore(t *tes
 	scores := make(chan Scoring, 4)
 	finish := make(chan bool, 1)
 
-	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 1}, time.Second, 500}
-	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{0, 0, cell.TypeBlack}, false, cell.TypeBlack, 2}, time.Second, 6000}
-	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 3}, time.Second, 2000}
-	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 4}, time.Second, 1000}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 1}, time.Second, 500, map[string]int{}}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{0, 0, cell.TypeBlack}, false, cell.TypeBlack, 2}, time.Second, 6000, map[string]int{}}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 3}, time.Second, 2000, map[string]int{}}
+	scores <- Scoring{Node{board.Board{}, cell.Cell{}, cell.Cell{}, false, cell.TypeBlack, 4}, time.Second, 1000, map[string]int{}}
 
 	go func() {
 		time.Sleep(time.Second)
