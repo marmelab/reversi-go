@@ -18,9 +18,16 @@ type Node struct {
 	Depth          int
 }
 
+type Scoring struct {
+	ScoreNode   Node
+	ScoringTime time.Duration
+	Score       int
+}
+
 func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
 	nodes := make(chan Node, 100)
+	scores := make(chan Scoring)
 	timeout := make(chan bool, 1)
 
 	go func() {
@@ -38,15 +45,31 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 		return legalCellChanges[0], nil
 	}
 
+	// Start scoring workers
+
+	for i := 0; i < 5; i++ {
+		go ScoringWorker(nodes, scores)
+	}
+
+	// Start board graph visitors
+
 	for _, cellChange := range legalCellChanges {
 		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
 	}
 
-	return CaptureBestCellChange(nodes, timeout), nil
+	return CaptureBestCellChange(scores, timeout), nil
 
 }
 
-func CaptureBestCellChange(nodes chan Node, stopProcess chan bool) cell.Cell {
+func ScoringWorker(nodes <-chan Node, scores chan<- Scoring) {
+	for node := range nodes {
+		start := time.Now()
+		score := Score(node)
+		scores <- Scoring{node, time.Since(start), score}
+	}
+}
+
+func CaptureBestCellChange(scores chan Scoring, stopProcess chan bool) cell.Cell {
 
 	bestCellChange := cell.Cell{}
 	finished := false
@@ -55,11 +78,10 @@ func CaptureBestCellChange(nodes chan Node, stopProcess chan bool) cell.Cell {
 	for !finished {
 		select {
 		case finished = <-stopProcess:
-		case node := <-nodes:
-			score := Score(node, maxScore)
-			if score > maxScore {
-				maxScore = score
-				bestCellChange = node.RootCellChange
+		case scoring := <-scores:
+			if scoring.Score > maxScore {
+				maxScore = scoring.Score
+				bestCellChange = scoring.ScoreNode.RootCellChange
 			}
 		}
 	}
@@ -85,7 +107,7 @@ func NodeVisitor(node Node) []Node {
 	return out
 }
 
-func Score(node Node, scoreReference int) int {
+func Score(node Node) int {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
@@ -98,7 +120,7 @@ func Score(node Node, scoreReference int) int {
 	totalScore := zoningScore + supremacyScore
 
 	if node.IsOpponent {
-		return scoreReference - totalScore
+		return -totalScore
 	}
 
 	return totalScore
