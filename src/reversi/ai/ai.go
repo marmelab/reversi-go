@@ -2,7 +2,6 @@ package ai
 
 import (
 	"errors"
-	"math"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/matrix"
@@ -20,7 +19,7 @@ type Node struct {
 
 func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
-	nodes := make(chan Node)
+	nodes := make(chan Node, 100)
 	timeout := make(chan bool, 1)
 	bestCellChange := cell.Cell{}
 
@@ -44,13 +43,13 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 	}
 
 	finished := false
-	maxScore := -math.MaxInt32
+	maxScore := 0
 
 	for !finished {
 		select {
 		case finished = <-timeout:
 		case node := <-nodes:
-			score := Score(node)
+			score := Score(node, maxScore)
 			if score > maxScore {
 				maxScore = score
 				bestCellChange = node.RootCellChange
@@ -84,7 +83,7 @@ func RecursiveNodeVisitor(rootNode Node, out chan Node) {
 	}()
 }
 
-func Score(node Node) int {
+func Score(node Node, scoreReference int) int {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
@@ -94,7 +93,13 @@ func Score(node Node) int {
 	zoningScore := GetZoningScore(availableCellChanges, node.Board)
 	supremacyScore := GetSupremacyScore(node.Board, node.CellType)
 
-	return zoningScore + supremacyScore
+	totalScore := zoningScore + supremacyScore
+
+	if node.IsOpponent {
+		return scoreReference - totalScore
+	}
+
+	return totalScore
 
 }
 
