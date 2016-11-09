@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
+	"reversi/ai"
 	"reversi/game/cell"
 	"reversi/game/game"
 	"reversi/game/player"
+	"strings"
 )
 
 func main() {
@@ -16,16 +18,28 @@ func main() {
 
 	party := game.New([]player.Player{playerBlack, playerWhite})
 
+	fmt.Println("\n########## INITIAL BOARD ##########")
 	fmt.Println(game.Render(party))
-
 	fmt.Println("\n########## GAME STARTED ##########")
+
+	var cellChange cell.Cell
+	var err error
 
 	for !game.IsFinished(party) {
 
 		fmt.Println(game.RenderAskBoard(party))
 
-		var err error
-		party, err = game.PlayTurn(party)
+		currentPlayer := game.GetCurrentPlayer(party)
+
+		if currentPlayer.HumanPlayer {
+			fmt.Printf("%s (%s), It's our turn !\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
+			cellChange = game.AskForCellChange(party)
+		} else {
+			fmt.Printf("%s (%s) thinks about best positions..\n", strings.ToUpper(currentPlayer.Name), cell.GetSymbol(currentPlayer.CellType))
+			cellChange, _ = ai.GetBestCellChange(party, 0, 4)
+		}
+
+		party, err = game.PlayTurn(party, cellChange)
 
 		if err != nil {
 			fmt.Println(err)
@@ -34,26 +48,34 @@ func main() {
 	}
 
 	fmt.Println("\n########## END OF GAME ##########\n")
+	fmt.Println(game.Render(party))
 
-	game.Render(party)
+	if winner, err := game.GetWinner(party); err == nil {
+		fmt.Printf("\n########## %s (%s) WINS ! ##########\n\n", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
+	} else {
+		fmt.Println(err)
+	}
 
 }
 
 func askForPlayer(header string, cellType uint8) player.Player {
 
-	var isHuman string
+	var isHumanInput string
 	var name string
 
 	fmt.Println(header)
 	fmt.Print("Are you an human ? (y/n): ")
-	fmt.Scanf("%s", &isHuman)
+	fmt.Scanf("%s", &isHumanInput)
+	isHuman := (isHumanInput == "y" || isHumanInput == "")
 
-	if isHuman == "y" || isHuman == "" {
+	if isHuman {
 		fmt.Print("What's your name ?: ")
-		fmt.Scanf("%s", &name)
-		return player.New(name, true, cellType)
+	} else {
+		fmt.Print("What's the computer name ?: ")
 	}
 
-	return player.New("Computer", false, cellType)
+	fmt.Scanf("%s", &name)
+
+	return player.New(name, isHuman, cellType)
 
 }

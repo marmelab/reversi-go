@@ -3,6 +3,7 @@ package board
 import (
 	"reflect"
 	"reversi/game/cell"
+	"reversi/game/vector"
 	"testing"
 )
 
@@ -157,6 +158,17 @@ func TestGetCellTypeShouldReturnEmptyCellTypeForOutOfRangeCell(t *testing.T) {
 
 	if GetCellType(42, 42, board) != cell.TypeEmpty {
 		t.Error("GetCellType should return EmptyCellType for OutOfRange cell")
+	}
+
+}
+
+func TestGetFlippedCellsForCellChangeAndDirectionVector(t *testing.T) {
+
+	testBoard := Board{{2, 1, 1, 0}}
+	expectedCells := []cell.Cell{cell.Cell{2, 0, 2}, cell.Cell{1, 0, 2}}
+
+	if !reflect.DeepEqual(GetFlippedCellsForCellChangeAndDirectionVector(cell.Cell{3, 0, 2}, vector.Vector{-1, 0}, testBoard), expectedCells) {
+		t.Error("GetFlippedCellsForCellChangeAndDirectionVector should return flippedCells in direction")
 	}
 
 }

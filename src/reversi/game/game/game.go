@@ -6,7 +6,6 @@ import (
 	"reversi/game/board"
 	"reversi/game/cell"
 	"reversi/game/player"
-	"strings"
 )
 
 type Game struct {
@@ -36,24 +35,37 @@ func GetCurrentPlayer(game Game) player.Player {
 	return game.Players[game.CurrPlayerIndex]
 }
 
-func GetScore(game Game) map[player.Player]uint8 {
-	dist := board.GetCellDistribution(game.Board)
-	score := make(map[player.Player]uint8, 2)
-	for _, player := range game.Players {
-		score[player] = dist[player.CellType]
+func GetReversePlayer(game Game) player.Player {
+	return game.Players[GetReversePlayerIndex(game)]
+}
+
+func GetReversePlayerIndex(game Game) uint8 {
+	if game.CurrPlayerIndex == 0 {
+		return 1
 	}
-	return score
+	return 0
 }
 
 func SwitchPlayer(game Game) Game {
-
 	newGame := game
-	if newGame.CurrPlayerIndex == 0 {
-		newGame.CurrPlayerIndex = 1
-	} else {
-		newGame.CurrPlayerIndex = 0
-	}
+	newGame.CurrPlayerIndex = GetReversePlayerIndex(newGame)
 	return newGame
+}
+
+func GetScores(game Game) (currentPlayerScore, reversePlayerScore uint8) {
+	dist := board.GetCellDistribution(game.Board)
+	return dist[GetCurrentPlayer(game).CellType], dist[GetReversePlayer(game).CellType]
+}
+
+func GetWinner(game Game) (player.Player, error) {
+	currentPlayerScore, reversePlayerScore := GetScores(game)
+	if currentPlayerScore > reversePlayerScore {
+		return GetCurrentPlayer(game), nil
+	}
+	if reversePlayerScore > currentPlayerScore {
+		return GetReversePlayer(game), nil
+	}
+	return player.Player{}, errors.New("There's no winner")
 }
 
 func CanPlayerChangeCells(player player.Player, currentGame Game) bool {
@@ -66,38 +78,49 @@ func RenderAskBoard(game Game) string {
 	return board.Render(game.Board, legalCellChanges)
 }
 
-func PlayTurn(currentGame Game) (Game, error) {
+func PlayTurn(currentGame Game, cellChange cell.Cell) (Game, error) {
 
-	if !CanPlayerChangeCells(GetCurrentPlayer(currentGame), currentGame) {
-		return SwitchPlayer(currentGame), errors.New("You can't play !")
+	newGame := PlayCellChange(currentGame, cellChange)
+
+	if !CanPlayerChangeCells(GetReversePlayer(newGame), newGame) {
+		return newGame, errors.New("Opponent can't play! Play Again!")
 	}
 
-	newGame := currentGame
-	cellChange := askForCellChange(newGame)
-
-	cellChangesFromChoice := append(board.GetFlippedCellsFromCellChange(cellChange, newGame.Board), cellChange)
-	newGame.Board = board.DrawCells(cellChangesFromChoice, newGame.Board)
+	if !CanPlayerChangeCells(GetCurrentPlayer(newGame), newGame) {
+		return newGame, errors.New("There's no cell to play.")
+	}
 
 	return SwitchPlayer(newGame), nil
 
 }
 
-func askForCellChange(game Game) cell.Cell {
+func NoBodyCanApplyCellChange(currentGame Game) bool {
+	return !CanPlayerChangeCells(GetReversePlayer(currentGame), currentGame) && !CanPlayerChangeCells(GetCurrentPlayer(currentGame), currentGame)
+}
 
-	var legalCellChangeChoice int
-	currentPlayer := GetCurrentPlayer(game)
-	legalCellChanges := board.GetLegalCellChangesForCellType(currentPlayer.CellType, game.Board)
+func PlayCellChange(game Game, cellChange cell.Cell) Game {
+	cellChanges := append(board.GetFlippedCellsFromCellChange(cellChange, game.Board), cellChange)
+	return Game{
+		board.DrawCells(cellChanges, game.Board),
+		game.Players,
+		game.CurrPlayerIndex,
+	}
+}
 
-	fmt.Printf("%s, It's our turn !\n", strings.ToUpper(currentPlayer.Name))
+func GetAvailableCellChanges(game Game) []cell.Cell {
+	return board.GetLegalCellChangesForCellType(GetCurrentPlayer(game).CellType, game.Board)
+}
 
-	if currentPlayer.HumanPlayer {
-		fmt.Printf("Which position do you choose (0..%d) ? ", len(legalCellChanges)-1)
+func AskForCellChange(game Game) cell.Cell {
+
+	legalCellChangeChoice := 999
+	availableCellChanges := GetAvailableCellChanges(game)
+
+	for legalCellChangeChoice > len(availableCellChanges)-1 || legalCellChangeChoice < 0 {
+		fmt.Printf("Which position do you choose (0..%d) ? \n", len(availableCellChanges)-1)
 		fmt.Scanf("%d\n", &legalCellChangeChoice)
-	} else {
-		legalCellChangeChoice = 0 // todo => AI
-		fmt.Printf("AI makes his choice ! %d\n", legalCellChangeChoice)
 	}
 
-	return legalCellChanges[legalCellChangeChoice]
+	return availableCellChanges[legalCellChangeChoice]
 
 }

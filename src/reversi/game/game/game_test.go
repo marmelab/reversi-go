@@ -20,16 +20,22 @@ func TestNewGameShouldReturnNewGame(t *testing.T) {
 
 }
 
-func TestIsFinishedShouldReturnSameAsBoardIsFull(t *testing.T) {
+func TestIsFinishedShouldReturnTrueIfBoardIsFull(t *testing.T) {
 
-	fullBoard := board.Board{{cell.TypeBlack}}
-	emptyBoard := board.Board{{cell.TypeEmpty}}
+	fullBoardGame := Game{board.Board{{cell.TypeBlack}}, make([]player.Player, 2, 2), 0}
 
-	finishedGame := Game{fullBoard, make([]player.Player, 2, 2), 0}
-	notFinishedGame := Game{emptyBoard, make([]player.Player, 2, 2), 0}
+	if !IsFinished(fullBoardGame) {
+		t.Error("IsFinished should return true if board is full")
+	}
 
-	if IsFinished(finishedGame) != board.IsFull(fullBoard) || IsFinished(notFinishedGame) != board.IsFull(emptyBoard) {
-		t.Error("IsFinished don't return same value as Board IsFull")
+}
+
+func TestIsFinishedShouldReturnFalseIfBoardIsNotFull(t *testing.T) {
+
+	notFullBoardGame := Game{board.Board{{cell.TypeEmpty}}, make([]player.Player, 2, 2), 0}
+
+	if IsFinished(notFullBoardGame) {
+		t.Error("IsFinished should return false if board is not full")
 	}
 
 }
