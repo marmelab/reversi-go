@@ -93,7 +93,7 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 
 	}
 
-	if countFirstLevel != 4 || countSecondLevel != 12{
+	if countFirstLevel != 4 || countSecondLevel != 12 {
 		t.Error("RecursiveNodeVisitor should visit node recursively")
 	}
 

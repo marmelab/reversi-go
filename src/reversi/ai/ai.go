@@ -94,7 +94,7 @@ func CaptureBestCellChange(scores chan Scoring, stopProcess chan bool) cell.Cell
 func RecursiveNodeVisitor(rootNode Node, out chan Node) {
 	for _, node := range NodeVisitor(rootNode) {
 		out <- node
-		defer func(){ go RecursiveNodeVisitor(node, out) }()
+		defer func() { go RecursiveNodeVisitor(node, out) }()
 	}
 }
 
