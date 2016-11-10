@@ -2,7 +2,6 @@ package ai
 
 import (
 	"errors"
-	//"fmt"
 	"reversi/ai/scoring"
 	"reversi/game/board"
 	"reversi/game/cell"
@@ -23,6 +22,8 @@ type Scoring struct {
 	ScoringTime time.Duration
 	Score       int
 }
+
+const SCORING_WORKER_COUNT int = 4
 
 func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
@@ -47,7 +48,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 
 	// Start scoring workers
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < SCORING_WORKER_COUNT; i++ {
 		go ScoringWorker(nodes, scores)
 	}
 
