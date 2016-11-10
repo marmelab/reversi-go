@@ -2,9 +2,10 @@ package ai
 
 import (
 	"errors"
+	"fmt"
+	"math"
 	"reversi/ai/scoring"
 	"reversi/debug"
-	"fmt"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"time"
@@ -56,7 +57,7 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 
 	// Start board graph visitors
 	for _, cellChange := range legalCellChanges {
-		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 1}, nodes)
+		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 0}, nodes)
 	}
 
 	return CaptureBestCellChange(scores, timeout), nil
@@ -73,25 +74,32 @@ func ScoringWorker(nodes <-chan Node, scores chan<- Scoring) {
 
 func CaptureBestCellChange(scores chan Scoring, stopProcess chan bool) cell.Cell {
 
-	bestCellChange := cell.Cell{}
+	aggregatedScores := map[cell.Cell]int{}
 	finished := false
-	maxScore := 0
-
-	debug.Log("##############################")
 
 	for !finished {
 		select {
 		case finished = <-stopProcess:
 		case scoring := <-scores:
-			if scoring.Score > maxScore {
-				rcc := scoring.ScoreNode.RootCellChange
-				debug.Log(fmt.Sprintf("%d:%d - Score: %d (%s)", rcc.X+1, rcc.Y+1, scoring.Score, scoring.Detail))
-				maxScore = scoring.Score
-				bestCellChange = rcc
+			rcc := scoring.ScoreNode.RootCellChange
+			debug.Log(fmt.Sprintf("%d:%d (from %d depth) - Score: %d (%s)", rcc.X+1, rcc.Y+1, scoring.ScoreNode.Depth, scoring.Score, debug.MapFormat(scoring.Detail)))
+			if _, ok := aggregatedScores[rcc]; !ok {
+				aggregatedScores[rcc] = 0
 			}
+			aggregatedScores[rcc] += scoring.Score
 		}
 	}
 
+	bestCellChange := cell.Cell{}
+	maxScore := -math.MaxInt32
+
+	for cellChange, score := range aggregatedScores {
+		debug.Log(fmt.Sprintf("## Aggregated %d:%d => %d", cellChange.X+1, cellChange.Y+1, score))
+		if score >= maxScore {
+			maxScore = score
+			bestCellChange = cellChange
+		}
+	}
 	return bestCellChange
 
 }
@@ -121,7 +129,7 @@ func Score(node Node) (int, map[string]int) {
 
 	availableCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
 
-	zoningScore := scoring.GetZoningScore(availableCellChanges, node.Board)
+	zoningScore := scoring.GetZoningScore(availableCellChanges, node.Board, node.Depth)
 	supremacyScore := scoring.GetSupremacyScore(node.Board, node.CellType)
 	possibilitiesScore := scoring.GetPossibilitiesScore(len(availableCellChanges), node.Depth)
 
