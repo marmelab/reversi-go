@@ -4,7 +4,7 @@ go:
   - 1.7.3
 
 install:
-  - go get github.com/fatih/color
-  - go get github.com/olekukonko/tablewriter
+  - GOPATH=$(pwd) && go get github.com/fatih/color
+  - GOPATH=$(pwd) && go get github.com/olekukonko/tablewriter
 
 script: GOPATH=$(pwd) && go test ./...
