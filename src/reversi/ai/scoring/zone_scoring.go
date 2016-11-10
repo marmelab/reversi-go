@@ -6,7 +6,7 @@ import (
 	"reversi/game/matrix"
 )
 
-func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
+func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board, depth int) int {
 
 	zoningScore := 0
 	xSize, ySize := matrix.GetSize(gameBoard)
@@ -22,16 +22,24 @@ func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int
 
 		zoningScore += zoningScoreBoard[yPos][xPos]
 
+		if depth == 1 && isCorner(xPos, yPos, xSize, ySize) {
+			zoningScore += 10000
+		}
+
 	}
 
-	return zoningScore
+	if depth == 0 {
+		depth = 1
+	}
+
+	return int(zoningScore / depth)
 
 }
 
 func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 
 	// ----------------------------------------------
-	// | 200 | -50 | 50 | 50 | 50 | 50 | -50 | 200 |
+	// | 250 | -50 | 50 | 50 | 50 | 50 | -50 | 250 |
 	// ----------------------------------------------
 	// | -50 | -50 | 0  | 0  | 0  | 0  | -50 | -50 |
 	// ----------------------------------------------
@@ -45,7 +53,7 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 	// ----------------------------------------------
 	// | -50 | -50 | 0  | 0  | 0  | 0  | -50 | -50 |
 	// ----------------------------------------------
-	// | 200 | -50 | 50 | 50 | 50 | 50 | -50 | 200 |
+	// | 250 | -50 | 50 | 50 | 50 | 50 | -50 | 250 |
 	// ----------------------------------------------
 
 	zoningScoreBoard := [][]int{}
@@ -57,13 +65,8 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 
 			zonScore = 0
 
-			// Helpers
-			isAroundCornerVertical := (x == 1 && (y < 2 || y > ySize-3)) || (x == xSize-2 && (y < 2 || y > ySize-3))
-			isAroundCornerHorizontal := (y == 1 && (x < 2 || x > xSize-3)) || (y == ySize-2 && (x < 2 || x > xSize-3))
-			isAroundCorner := isAroundCornerVertical || isAroundCornerHorizontal
-
 			// Borders (except around corner)
-			if (x == 0 || x == xSize-1 || y == 0 || y == ySize-1) && !isAroundCorner {
+			if isOnBorder(x, y, xSize, ySize) && !isAroundCorner(x, y, xSize, ySize) {
 				zonScore += 50
 			}
 
@@ -73,12 +76,12 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 			}
 
 			// Corner
-			if (x == 0 && y == 0) || (x == xSize-1 && y == ySize-1) || (x == 0 && y == ySize-1) || (x == xSize-1 && y == 0) {
-				zonScore += 150
+			if isCorner(x, y, xSize, ySize) {
+				zonScore += 250
 			}
 
 			// Negate around corners
-			if isAroundCorner {
+			if isAroundCorner(x, y, xSize, ySize) {
 				zonScore -= 50
 			}
 
@@ -89,4 +92,18 @@ func BuildZoneScoringBoard(xSize int, ySize int) [][]int {
 
 	return zoningScoreBoard
 
+}
+
+func isCorner(x int, y int, xSize int, ySize int) bool {
+	return (x == 0 && y == 0) || (x == xSize-1 && y == ySize-1) || (x == 0 && y == ySize-1) || (x == xSize-1 && y == 0)
+}
+
+func isAroundCorner(x int, y int, xSize int, ySize int) bool {
+	isAroundCornerVertical := (x == 1 && (y < 2 || y > ySize-3)) || (x == xSize-2 && (y < 2 || y > ySize-3))
+	isAroundCornerHorizontal := (y == 1 && (x < 2 || x > xSize-3)) || (y == ySize-2 && (x < 2 || x > xSize-3))
+	return isAroundCornerVertical || isAroundCornerHorizontal
+}
+
+func isOnBorder(x int, y int, xSize int, ySize int) bool {
+	return x == 0 || x == xSize-1 || y == 0 || y == ySize-1
 }
