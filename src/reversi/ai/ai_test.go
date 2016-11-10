@@ -1,7 +1,6 @@
 package ai
 
 import (
-	//"fmt"
 	"reversi/game/board"
 	"reversi/game/cell"
 	"testing"
@@ -79,9 +78,8 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 
 	countFirstLevel := 0
 	countSecondLevel := 0
-	countThirdLevel := 0
 
-	for i := 0; i < 20000; i++ {
+	for i := 0; i < 10000; i++ {
 
 		node := <-nodes
 
@@ -93,13 +91,9 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 			countSecondLevel += 1
 		}
 
-		if node.Depth == 3 {
-			countThirdLevel += 1
-		}
-
 	}
 
-	if countFirstLevel != 4 || countSecondLevel != 12 || countThirdLevel != 56 {
+	if countFirstLevel != 4 || countSecondLevel != 12{
 		t.Error("RecursiveNodeVisitor should visit node recursively")
 	}
 
