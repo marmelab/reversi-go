@@ -81,7 +81,7 @@ func TestRecursiveNodeVisitorShouldRecursivelyVisitNode(t *testing.T) {
 	countSecondLevel := 0
 	countThirdLevel := 0
 
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 20000; i++ {
 
 		node := <-nodes
 
