@@ -61,7 +61,7 @@ func main() {
 	fmt.Println(IndentString(game.Render(currentGame), CENTERING_BOARD_SPACE_COUNT))
 
 	if winner, err := game.GetWinner(currentGame); err == nil {
-		winnerNotice := fmt.Sprintf("\n########## %s (%s) WINS ! ##########\n\n", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
+		winnerNotice := fmt.Sprintf(" %s (%s) WINS ! ", strings.ToUpper(winner.Name), cell.GetSymbol(winner.CellType))
 		fmt.Println(Centering(winnerNotice, GAME_WIDTH, "#"))
 	} else {
 		fmt.Println(err)
