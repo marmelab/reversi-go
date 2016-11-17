@@ -1,10 +1,10 @@
 .PHONY: install run debug test lint benchmark
 
 GO_BIN := docker run \
+	-p 8080:8080 \
 	--interactive \
 	--rm \
 	--tty \
-	-P \
 	--volume="$(CURDIR):/srv" \
 	reversi-go
 
@@ -19,6 +19,11 @@ install:
 
 run:
 	$(GO_BIN) go run src/reversi/main.go
+
+# Run Server ####################
+
+run-server:
+	$(GO_BIN) go run src/reversi/ai/server/server.go
 
 # Run With debug trace ##########
 
