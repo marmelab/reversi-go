@@ -12,8 +12,8 @@ func TestGetZoningScore(t *testing.T) {
 
 	board, _ := board.InitCells(board.New(8, 8))
 
-	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 200 {
-		t.Error("GetZoningScore should return 200 for corner cell position")
+	if GetZoningScore([]cell.Cell{cell.Cell{0, 0, 1}}, board) != 300 {
+		t.Error("GetZoningScore should return 300 for corner cell position")
 	}
 
 	if GetZoningScore([]cell.Cell{cell.Cell{0, 2, 1}}, board) != 50 {
@@ -41,14 +41,14 @@ func TestGetSupremacyScoreShouldReturnAValidSupremacyScore(t *testing.T) {
 func TestBuildZoneScoringBoardShouldReturnAValidScoreMatrix(t *testing.T) {
 
 	expectedZoneScoringBoard := [][]int{
-		{200, -50, 50, 50, 50, 50, -50, 200},
+		{300, -50, 50, 50, 50, 50, -50, 300},
 		{-50, -50, 0, 0, 0, 0, -50, -50},
 		{50, 0, 50, 50, 50, 50, 0, 50},
 		{50, 0, 50, 0, 0, 50, 0, 50},
 		{50, 0, 50, 0, 0, 50, 0, 50},
 		{50, 0, 50, 50, 50, 50, 0, 50},
 		{-50, -50, 0, 0, 0, 0, -50, -50},
-		{200, -50, 50, 50, 50, 50, -50, 200},
+		{300, -50, 50, 50, 50, 50, -50, 300},
 	}
 
 	zoneScoringBoard := BuildZoneScoringBoard(8, 8)

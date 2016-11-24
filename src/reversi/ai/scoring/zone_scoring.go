@@ -6,7 +6,7 @@ import (
 	"reversi/game/matrix"
 )
 
-func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board, depth int) int {
+func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board) int {
 
 	zoningScore := 0
 	xSize, ySize := matrix.GetSize(gameBoard)
@@ -22,17 +22,9 @@ func GetZoningScore(availableCellChanges []cell.Cell, gameBoard board.Board, dep
 
 		zoningScore += zoningScoreBoard[yPos][xPos]
 
-		if depth == 1 && isCorner(xPos, yPos, xSize, ySize) {
-			zoningScore += 10000
-		}
-
 	}
 
-	if depth == 0 {
-		depth = 1
-	}
-
-	return int(zoningScore / depth)
+	return int(zoningScore)
 
 }
 

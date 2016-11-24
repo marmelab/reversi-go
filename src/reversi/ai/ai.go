@@ -2,37 +2,18 @@ package ai
 
 import (
 	"errors"
-	"fmt"
 	"math"
 	"reversi/ai/scoring"
-	"reversi/debug"
+	"reversi/ai/node"
+	//"reversi/debug"
 	"reversi/game/board"
 	"reversi/game/cell"
+	"github.com/hishboy/gocommons/lang"
 	"time"
 )
 
-type Node struct {
-	Board          board.Board
-	cellChange     cell.Cell
-	RootCellChange cell.Cell
-	IsOpponent     bool
-	CellType       uint8
-	Depth          int
-}
-
-type Scoring struct {
-	ScoreNode   Node
-	ScoringTime time.Duration
-	Score       int
-	Detail      map[string]int
-}
-
-const SCORING_WORKER_COUNT int = 4
-
 func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
-	nodes := make(chan Node, 100)
-	scores := make(chan Scoring)
 	timeout := make(chan bool, 1)
 
 	go func() {
@@ -42,6 +23,8 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 
 	legalCellChanges := board.GetLegalCellChangesForCellType(cellType, currentBoard)
 
+	// Handle special cases (1 or 0 possibility)
+
 	if len(legalCellChanges) == 0 {
 		return cell.Cell{}, errors.New("There's no legal cell change for this cellType.")
 	}
@@ -50,88 +33,88 @@ func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration 
 		return legalCellChanges[0], nil
 	}
 
-	// Start scoring workers
-	for i := 0; i < SCORING_WORKER_COUNT; i++ {
-		go ScoringWorker(nodes, scores)
+	// Explore node tree for each root node
+
+	nodes := make([]*node.Node, len(legalCellChanges))
+
+	for i, cellChange := range legalCellChanges {
+		rootNode := node.New(false, currentBoard, cellChange, cellChange.CellType)
+		nodes[i] = &rootNode
+		VisitNode(&rootNode, timeout)
 	}
 
-	// Start board graph visitors
-	for _, cellChange := range legalCellChanges {
-		go RecursiveNodeVisitor(Node{currentBoard, cellChange, cellChange, false, cellType, 0}, nodes)
-	}
-
-	return CaptureBestCellChange(scores, timeout), nil
+	return CaptureBestCellChange(nodes, timeout), nil
 
 }
 
-func ScoringWorker(nodes <-chan Node, scores chan<- Scoring) {
-	for node := range nodes {
-		start := time.Now()
-		score, details := Score(node)
-		scores <- Scoring{node, time.Since(start), score, details}
-	}
-}
+func CaptureBestCellChange(nodes []*node.Node, stopProcess chan bool) cell.Cell {
 
-func CaptureBestCellChange(scores chan Scoring, stopProcess chan bool) cell.Cell {
-
-	aggregatedScores := map[cell.Cell]int{}
 	finished := false
 
 	for !finished {
 		select {
 		case finished = <-stopProcess:
-		case scoring := <-scores:
-			rcc := scoring.ScoreNode.RootCellChange
-			debug.Log(fmt.Sprintf("%d:%d (from %d depth) - Score: %d (%s)", rcc.X+1, rcc.Y+1, scoring.ScoreNode.Depth, scoring.Score, debug.MapFormat(scoring.Detail)))
-			if _, ok := aggregatedScores[rcc]; !ok {
-				aggregatedScores[rcc] = 0
-			}
-			aggregatedScores[rcc] += scoring.Score
 		}
 	}
 
 	bestCellChange := cell.Cell{}
 	maxScore := -math.MaxInt32
 
-	for cellChange, score := range aggregatedScores {
-		debug.Log(fmt.Sprintf("## Aggregated %d:%d => %d", cellChange.X+1, cellChange.Y+1, score))
-		if score >= maxScore {
-			maxScore = score
-			bestCellChange = cellChange
+	for _, currNode := range nodes {
+		currNode.Evaluate()
+		if currNode.Score != nil && *currNode.Score >= maxScore {
+			maxScore = *currNode.Score
+			bestCellChange = currNode.GetRootNode().CellChange
 		}
 	}
+
 	return bestCellChange
 
 }
 
-func RecursiveNodeVisitor(rootNode Node, out chan Node) {
-	for _, node := range NodeVisitor(rootNode) {
-		out <- node
-		defer func() { go RecursiveNodeVisitor(node, out) }()
-	}
+func VisitNode(rootNode *node.Node, stopProcess chan bool) {
+
+	visitQueue := lang.NewQueue()
+	visitQueue.Push(rootNode)
+
+	go BfsNodeVisitor(visitQueue, stopProcess)
+
 }
 
-func NodeVisitor(node Node) []Node {
-	out := []Node{}
-	legalCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
-	for _, cellChange := range legalCellChanges {
-		nodeBoard := GetBoardFromCellChange(node.Board, cellChange)
-		out = append(out, Node{nodeBoard, cellChange, node.RootCellChange, !node.IsOpponent, cell.GetReverseCellType(node.CellType), node.Depth + 1})
+func BfsNodeVisitor(visitQueue *lang.Queue, stopProcess chan bool) {
+
+	for visitQueue.Len() > 0 {
+
+		currNode := visitQueue.Poll().(*node.Node)
+		legalCellChanges := board.GetLegalCellChangesForCellType(currNode.CellType, currNode.Board)
+
+		for _, cellChange := range legalCellChanges {
+			select {
+			    case <- stopProcess:
+			        return
+			    default:
+					childNode := currNode.Add(GetBoardFromCellChange(currNode.Board, cellChange), cellChange)
+					score, _ := Score(childNode)
+					childNode.Score = score
+					visitQueue.Push(childNode)
+			}
+		}
+
 	}
-	return out
+
 }
 
-func Score(node Node) (int, map[string]int) {
+func Score(currNode *node.Node) (*int, map[string]int) {
 
 	// Enhance with "techniques particulières à Othello"
 	// http://www.ffothello.org/informatique/algorithmes/
 	// http://www.ffothello.org/othello/principes-strategiques/
 
-	availableCellChanges := board.GetLegalCellChangesForCellType(node.CellType, node.Board)
+	availableCellChanges := board.GetLegalCellChangesForCellType(currNode.CellType, currNode.Board)
 
-	zoningScore := scoring.GetZoningScore(availableCellChanges, node.Board, node.Depth)
-	supremacyScore := scoring.GetSupremacyScore(node.Board, node.CellType)
-	possibilitiesScore := scoring.GetPossibilitiesScore(len(availableCellChanges), node.Depth)
+	zoningScore := scoring.GetZoningScore(availableCellChanges, currNode.Board)
+	supremacyScore := scoring.GetSupremacyScore(currNode.Board, currNode.CellType)
+	possibilitiesScore := scoring.GetPossibilitiesScore(len(availableCellChanges))
 
 	totalScore := zoningScore + supremacyScore + possibilitiesScore
 
@@ -141,11 +124,7 @@ func Score(node Node) (int, map[string]int) {
 		"possibilities": possibilitiesScore,
 	}
 
-	if node.IsOpponent {
-		return -totalScore, details
-	}
-
-	return totalScore, details
+	return &totalScore, details
 
 }
 

@@ -1,6 +1,6 @@
 package scoring
 
-func GetPossibilitiesScore(countPossibilities int, depth int) int {
+func GetPossibilitiesScore(countPossibilities int) int {
 
 	return countPossibilities * 5
 

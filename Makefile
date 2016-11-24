@@ -14,6 +14,7 @@ install:
 	docker build --tag=reversi-go .
 	$(GO_BIN) go get github.com/fatih/color
 	$(GO_BIN) go get github.com/olekukonko/tablewriter
+	$(GO_BIN) go get github.com/hishboy/gocommons/lang
 
 # Run ###########################
 
