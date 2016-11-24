@@ -15,7 +15,8 @@ import (
 func GetBestCellChangeInTime(currentBoard board.Board, cellType uint8, duration time.Duration) (cell.Cell, error) {
 
 	timeout := make(chan bool, 1)
-
+	defer close(timeout)
+	
 	go func() {
 		time.Sleep(duration)
 		timeout <- true
